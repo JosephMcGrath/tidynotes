@@ -47,16 +47,13 @@ class notebook:
             text = f.read()
         return text
 
-    def make_note(self, date=datetime.datetime.today()):
-        template = self.env.get_template("note.md")
-        output = template.render(dates=self.format_date(date))
-        return output
-
-    def write_note(self, date=datetime.datetime.today(), force=False):
+    def make_note(self, date=datetime.datetime.today(), force=False):
         dates = self.format_date(date)
         dst_path = os.path.join(self.note_path, dates["path"], dates["file"])
         if force or not os.path.exists(dst_path):
-            self.write(dst_path, self.make_note(date))
+            template = self.env.get_template("note.md")
+            output = template.render(dates=self.format_date(date))
+            self.write(dst_path, output)
 
     def format_date(self, target_date):
         """Formats a date into useful predefined formats."""
@@ -105,4 +102,4 @@ class notebook:
 if __name__ == "__main__":
     book = notebook(config_path=os.path.join(os.getcwd(), "test"))
 
-    book.write_note()
+    book.make_note()
