@@ -46,7 +46,21 @@ class notebook:
             "file": "notes_%Y-%m-%d_%a.md",
             "path": "%Y/%m",
         }
-        return {x : target_date.strftime(formats[x]) for x in formats}
+        return {x: target_date.strftime(formats[x]) for x in formats}
+
+    def note_list(self):
+        """
+        Returns a list of all the markdown files in the notes folder.
+
+        Notes are sorted by thier file names (not paths).
+        """
+        files = [
+            os.path.join(dp, f)
+            for dp, _, filenames in os.walk(self.note_path)
+            for f in filenames
+            if os.path.splitext(f)[1].lower() == ".md"
+        ]
+        return sorted(files, key=lambda x: os.path.split(x)[-1])
 
 
 if __name__ == "__main__":
