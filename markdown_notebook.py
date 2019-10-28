@@ -3,25 +3,36 @@ import jinja2
 import datetime
 import markdown
 import re
+import json
 
-# TODO: Render markdown to html,
 # TODO: Log the hash of any files rendered,
 # TODO: Accept command-line inputs,
 # TODO: Replacements at the time of rendering,
 # TODO: Heading management (project / task names),
 # TODO: To-do list,
-# TODO: Use a config file in the notebook rather than pre-defined strings,
 # TODO: Extract (& render) all entires under a single heading,
+# TODO: Cache rendered html to speed up repeated rendering,
 
 
 class notebook:
-    def __init__(self, note_path, template_path, notebook_name="Test"):
-        self.note_path = note_path
-        self.template_path = template_path
-        self.notebook_name = notebook_name
-
+    def __init__(self, config_path):
+        self.read_config(config_path)
         _ = jinja2.FileSystemLoader(self.template_path)
         self.env = jinja2.Environment(loader=_)
+
+    def read_config(self, config_path):
+        if os.path.isfile(config_path):
+            self.root_path = os.path.split(config_path)[0]
+            self.config_path = config_path
+        elif os.path.isdir(config_path):
+            self.root_path = config_path
+            self.config_path = os.path.join(config_path, "config.json")
+        with open(self.config_path) as f:
+            temp = json.load(f)
+        self.note_path = os.path.join(self.root_path, temp["note_path"])
+        self.template_path = os.path.join(self.root_path, temp["template_path"])
+        self.notebook_name = temp["notebook_name"]
+
 
     def write(self, file_path: str, content: str):
         "Writes a string to a file."
@@ -98,8 +109,7 @@ class notebook:
 
 if __name__ == "__main__":
     book = notebook(
-        note_path=os.path.join(os.getcwd(), "notes"),
-        template_path=os.path.join(os.getcwd(), "templates"),
+        config_path=os.path.join(os.getcwd(), "test")
     )
 
     book.write_note()
