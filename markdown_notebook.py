@@ -18,6 +18,7 @@ class notebook:
     def __init__(self, note_path, template_path, notebook_name="Test"):
         self.note_path = note_path
         self.template_path = template_path
+        self.notebook_name = notebook_name
 
         _ = jinja2.FileSystemLoader(self.template_path)
         self.env = jinja2.Environment(loader=_)
@@ -25,8 +26,9 @@ class notebook:
     def write(self, file_path: str, content: str):
         "Writes a string to a file."
         dst_dir = os.path.split(file_path)[0]
-        if not os.path.exists(dst_dir):
-            os.makedirs(dst_dir)
+        if dst_dir != "":
+            if not os.path.exists(dst_dir):
+                os.makedirs(dst_dir)
         with open(file_path, "w", encoding="utf-8") as f:
             return f.write(content)
 
@@ -88,8 +90,10 @@ class notebook:
             output[n] = self._render_markdown(
                 self._preprocess_markdown(self.read(path))
             )
-        output = ["".join(x) for x in output]
-        return output
+        output = self.env.get_template("page.html").render(
+            notebook_name=self.notebook_name, body="\n".join(output)
+        )
+        self.write(self.notebook_name + ".html", output)
 
 
 if __name__ == "__main__":

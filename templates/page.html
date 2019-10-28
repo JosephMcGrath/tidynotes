@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>{{notebook_name}}</title>
+{% if css is defined %}
+  <style type="text/css">
+{{css}}
+  </style>
+{% endif %}
+</head>
+<body>
+<div class = "main">
+<h1>{{notebook_name}}</h1>
+{{body}}
+</div>
+</body>
+</html>
