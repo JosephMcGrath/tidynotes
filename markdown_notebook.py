@@ -2,6 +2,7 @@ import os
 import jinja2
 import datetime
 import markdown
+import re
 
 # TODO: Render markdown to html,
 # TODO: Log the hash of any files rendered,
@@ -75,7 +76,10 @@ class notebook:
         return md.convert(markdown_text)
 
     def _preprocess_markdown(self, markdown_text):
-        return markdown_text
+        lines = markdown_text.split("\n")
+        # Add a level to the titles
+        lines = [re.sub("^#", "##", x) for x in lines]
+        return "\n".join(lines)
 
     def render_notebook(self):
         "Render the entire notebook to a HTML file."
