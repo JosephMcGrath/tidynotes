@@ -99,7 +99,7 @@ class notebook:
         output = self.env.get_template("page.html").render(
             notebook_name=self.notebook_name, body="\n".join(output)
         )
-        self.write(self.notebook_name + ".html", output)
+        self.write(os.path.join(self.root_path, self.notebook_name + ".html"), output)
 
 
 if __name__ == "__main__":
