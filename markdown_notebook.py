@@ -40,12 +40,11 @@ class notebook:
         output = template.render(dates=self.format_date(date))
         return output
 
-    def write_note(self, date=datetime.datetime.today()):
+    def write_note(self, date=datetime.datetime.today(), force=False):
         dates = self.format_date(date)
-        self.write(
-            os.path.join(self.note_path, dates["path"], dates["file"]),
-            self.make_note(date),
-        )
+        dst_path = os.path.join(self.note_path, dates["path"], dates["file"])
+        if force or not os.path.exists(dst_path):
+            self.write(dst_path, self.make_note(date))
 
     def format_date(self, target_date):
         """Formats a date into useful predefined formats."""
