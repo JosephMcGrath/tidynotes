@@ -1,5 +1,10 @@
 {
   "note_path":"notes",
   "template_path":"templates",
-  "notebook_name":"Test"
+  "notebook_name":"Test",
+  "date_formats" : {
+    "title": "%Y-%m-%d (%A)",
+    "file": "notes_%Y-%m-%d_%a.md",
+    "path": "%Y/%m"
+  }
 }

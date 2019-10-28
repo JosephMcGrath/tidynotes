@@ -28,11 +28,10 @@ class notebook:
             self.root_path = config_path
             self.config_path = os.path.join(config_path, "config.json")
         with open(self.config_path) as f:
-            temp = json.load(f)
-        self.note_path = os.path.join(self.root_path, temp["note_path"])
-        self.template_path = os.path.join(self.root_path, temp["template_path"])
-        self.notebook_name = temp["notebook_name"]
-
+            self.config = json.load(f)
+        self.note_path = os.path.join(self.root_path, self.config["note_path"])
+        self.template_path = os.path.join(self.root_path, self.config["template_path"])
+        self.notebook_name = self.config["notebook_name"]
 
     def write(self, file_path: str, content: str):
         "Writes a string to a file."
@@ -61,11 +60,7 @@ class notebook:
 
     def format_date(self, target_date):
         """Formats a date into useful predefined formats."""
-        formats = {
-            "title": "%Y-%m-%d (%A)",
-            "file": "notes_%Y-%m-%d_%a.md",
-            "path": "%Y/%m",
-        }
+        formats = self.config["date_formats"]
         return {x: target_date.strftime(formats[x]) for x in formats}
 
     def note_list(self):
@@ -108,8 +103,6 @@ class notebook:
 
 
 if __name__ == "__main__":
-    book = notebook(
-        config_path=os.path.join(os.getcwd(), "test")
-    )
+    book = notebook(config_path=os.path.join(os.getcwd(), "test"))
 
     book.write_note()
