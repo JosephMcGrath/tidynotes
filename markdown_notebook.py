@@ -1,6 +1,7 @@
 import os
 import jinja2
 import datetime
+import markdown
 
 # TODO: Render markdown to html,
 # TODO: Log the hash of any files rendered,
@@ -9,10 +10,11 @@ import datetime
 # TODO: Heading management (project / task names),
 # TODO: To-do list,
 # TODO: Use a config file in the notebook rather than pre-defined strings,
+# TODO: Extract (& render) all entires under a single heading,
 
 
 class notebook:
-    def __init__(self, note_path, template_path):
+    def __init__(self, note_path, template_path, notebook_name="Test"):
         self.note_path = note_path
         self.template_path = template_path
 
@@ -26,6 +28,11 @@ class notebook:
             os.makedirs(dst_dir)
         with open(file_path, "w", encoding="utf-8") as f:
             return f.write(content)
+
+    def read(self, file_path: str):
+        with open(file_path, "r", encoding="utf-8") as f:
+            text = f.read()
+        return text
 
     def make_note(self, date=datetime.datetime.today()):
         template = self.env.get_template("note.md")
@@ -52,7 +59,7 @@ class notebook:
         """
         Returns a list of all the markdown files in the notes folder.
 
-        Notes are sorted by thier file names (not paths).
+        Notes are sorted by their file names (not paths).
         """
         files = [
             os.path.join(dp, f)
@@ -61,6 +68,25 @@ class notebook:
             if os.path.splitext(f)[1].lower() == ".md"
         ]
         return sorted(files, key=lambda x: os.path.split(x)[-1])
+
+    def _render_markdown(self, markdown_text) -> str:
+        "Render provided markdown to a HTML string."
+        md = markdown.Markdown(extensions=["fenced_code", "tables", "sane_lists"])
+        return md.convert(markdown_text)
+
+    def _preprocess_markdown(self, markdown_text):
+        return markdown_text
+
+    def render_notebook(self):
+        "Render the entire notebook to a HTML file."
+        paths = self.note_list()
+        output = [None] * len(paths)
+        for n, path in enumerate(paths):
+            output[n] = self._render_markdown(
+                self._preprocess_markdown(self.read(path))
+            )
+        output = ["".join(x) for x in output]
+        return output
 
 
 if __name__ == "__main__":
