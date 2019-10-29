@@ -154,9 +154,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Markdown notebook manager.")
     parser.add_argument("notedir", type=str, help="Notebook directory path.")
     parser.add_argument(
-        "--make_note", help="Make a note for today.", action="store_true"
+        "-m", "--make_note", help="Make a note for today.", action="store_true"
     )
-    parser.add_argument("--render_all", help="Render all notes.", action="store_true")
+    parser.add_argument(
+        "-r", "--render_all", help="Render all notes.", action="store_true"
+    )
 
     args = parser.parse_args()
     book = notebook(config_path=args.notedir)
