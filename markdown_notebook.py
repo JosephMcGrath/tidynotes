@@ -33,8 +33,6 @@ class notebook:
             self.config = json.load(f)
         self.note_path = os.path.join(self.root_path, self.config["note_path"])
         self.template_path = os.path.join(self.root_path, self.config["template_path"])
-        self.notebook_name = self.config["notebook_name"]
-        self.working_path = self.config["working_path"]
 
     def write(self, file_path: str, content: str, mode: str = "w"):
         "Writes a string to a file."
@@ -98,12 +96,16 @@ class notebook:
             )
         render_args = {**self.config, "body": "\n".join(output)}
         output = self.env.get_template("page.html").render(render_args)
-        output_path = os.path.join(self.root_path, self.notebook_name) + ".html"
+        output_path = (
+            os.path.join(self.root_path, self.config["notebook_name"]) + ".html"
+        )
         self.write(output_path, output)
         self.log_file_info(output_path)
 
     def log_file_info(self, file_path):
-        dst_path = os.path.join(self.root_path, self.working_path, "hash_log.csv")
+        dst_path = os.path.join(
+            self.root_path, self.config["working_path"], "hash_log.csv"
+        )
         file_info = os.stat(file_path)
         output = [
             os.path.relpath(file_path, self.root_path),
