@@ -12,6 +12,8 @@ import hashlib
 # TODO: To-do list,
 # TODO: Extract (& render) all entires under a single heading,
 # TODO: Cache rendered html to speed up repeated rendering,
+# TODO: Formatting adjustments,
+# TODO: Create notebooks in a target folder,
 
 
 class notebook:
@@ -94,9 +96,8 @@ class notebook:
             output[n] = self._render_markdown(
                 self._preprocess_markdown(self.read(path))
             )
-        output = self.env.get_template("page.html").render(
-            notebook_name=self.notebook_name, body="\n".join(output)
-        )
+        render_args = {**self.config, "body": "\n".join(output)}
+        output = self.env.get_template("page.html").render(render_args)
         output_path = os.path.join(self.root_path, self.notebook_name) + ".html"
         self.write(output_path, output)
         self.log_file_info(output_path)
@@ -111,7 +112,7 @@ class notebook:
             calc_md5(file_path),
             str(file_info.st_size),
         ]
-        self.write(dst_path, ",".join(output), "a")
+        self.write(dst_path, ",".join(output) + "\n", "a")
 
 
 def hash_file(path, algorithm, buffer_size=65536):
@@ -137,5 +138,5 @@ def calc_md5(path, buffer_size=65536):
 
 if __name__ == "__main__":
     book = notebook(config_path=os.path.join(os.getcwd(), "test"))
-
     book.make_note()
+    book.render_notebook()

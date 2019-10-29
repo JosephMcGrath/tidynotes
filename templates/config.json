@@ -7,5 +7,7 @@
     "title": "%Y-%m-%d (%A)",
     "file": "notes_%Y-%m-%d_%a.md",
     "path": "%Y/%m"
-  }
+  },
+  "bg_hue": 35,
+  "text_col" : "rgb(20, 26, 21)"
 }

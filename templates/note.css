@@ -1,0 +1,211 @@
+/*============================================================================*/
+/*Global*/
+:root {
+    --main-bg-hue: {{bg_hue}};
+    --text_col: {{text_col}};
+    --code-saturation: 30%;
+    --code-lightness: 85%;
+}
+
+/*Base Styles*/
+body {
+    max-width: 1000px;
+    margin: auto;
+    padding: 1em;
+    line-height: 20px;
+    background-color: hsl(var(--main-bg-hue), 75%, 85%);
+    color: var(--text_col);
+    font-family: sans-serif;
+    font-size: 13px;
+}
+
+/*============================================================================*/
+/*Formatting for code.*/
+code {
+    overflow-x: auto;
+    font-size: 90%;
+    font-family: monospace;
+    font-weight: bold;
+    background-color: hsl(var(--main-bg-hue), 75%, 75%);
+    padding-left: 4px;
+    padding-right: 4px;
+    padding-top: 0px;
+    padding-bottom: 0px;
+}
+
+/*Blocks of code*/
+pre > code {
+    display: block;
+    padding: 10px;
+    border: 1px solid hsl(var(--main-bg-hue), 75%, 35%);
+    max-width: 100%;
+}
+
+code[class="sql"] {
+  background-color: hsl(120, var(--code-saturation), var(--code-lightness));
+}
+
+code[class="path"], code[class="sha256"] {
+  background-color: hsl(0, var(--code-saturation), var(--code-lightness));
+}
+
+code[class="log"] {
+  background-color: hsl(260, var(--code-saturation), var(--code-lightness));
+}
+
+code[class="python"], code[class="R"] {
+  background-color: hsl(200, var(--code-saturation), var(--code-lightness));
+}
+
+code[class="equation"] {
+  background-color: #000000;
+  color: #ffffff;
+}
+
+/*Code in a table*/
+td > code {
+  overflow-x: auto;
+  max-width: 500px;
+  white-space: pre;
+}
+
+/*Lines*/
+ul, li {
+  max-width: 95%;
+}
+
+/*Block quotes*/
+blockquote {
+  padding-left: 1em;
+  border-left: 0.5em hsl(var(--main-bg-hue), 5%, 90%) solid;
+  background-color: hsl(var(--main-bg-hue), 75%, 66%);
+  max-width: 100%;
+}
+
+/*Links*/
+a {
+  text-decoration: underline;
+  font-weight: bold;
+  color: --text_col;
+}
+
+a:visited {
+  text-decoration: underline;
+  color: --text_col;
+}
+
+/*============================================================================*/
+/*All Headings*/
+h1, h2, h3, h4, h5 {
+  text-decoration: underline;
+  text-transform: capitalize;
+  color: var(--text_col);
+  max-width: 100%;
+}
+
+h6 {
+  text-transform: capitalize;
+  color: var(--text_col);
+  max-width: 100%;
+}
+
+/*Document Title*/
+h1 {
+  text-align: center;
+  font-size: 2.2em;
+
+  border: 5px solid var(--text_col);
+  padding-top: 20px;
+  padding-right: 20px;
+  padding-left: 20px;
+  padding-bottom: 20px;
+  background-color: hsl(var(--main-bg-hue), 70%, 50%);
+  border-radius: 25px;
+}
+
+/*Day Title*/
+h2 {
+  position: sticky;
+  top: 0;
+  font-size: 1.5em;
+  text-align: center;
+
+  border-top: 5px solid var(--text_col);
+  border-left: 3px solid var(--text_col);
+  border-right: 3px solid var(--text_col);
+  border-bottom: 1px solid var(--text_col);
+  padding-top: 5px;
+  padding-bottom: 5px;
+  background-color: hsl(var(--main-bg-hue), 70%, 50%);
+}
+
+/*Project Title*/
+h3 {
+  font-size: 1.1em;
+  border-top: 4px solid var(--text_col);
+  border-left: 2px solid var(--text_col);
+  border-right: 2px solid var(--text_col);
+  padding-top: 5px;
+  text-align: center;
+}
+
+/*Activity Title*/
+h4 {
+  font-size: 1.1em;
+  font-style: italic;
+  padding-left: 5px;
+  border-top: 2px solid var(--text_col);
+  padding-top: 5px;
+  text-align: center;
+}
+
+h5, h6 {
+  font-size: 1.1em;
+  font-style: italic;
+  padding-left: 5px;
+}
+
+/*============================================================================*/
+/*Formatting tables */
+table, th, td {
+  border: 2px solid white;
+  border-collapse: collapse;
+  max-width: 100%;
+}
+
+table {
+  margin: 0 auto;
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+th {
+  background-color: hsl(var(--main-bg-hue), 75%, 75%);
+  text-align: center;
+  text-decoration: underline;
+}
+
+th, td {
+    padding: 5px;
+    vertical-align: centre;
+}
+
+tr:nth-child(odd) {
+  background-color: hsl(var(--main-bg-hue), 47%, 90%);
+}
+tr:nth-child(even) {
+  background-color: hsl(var(--main-bg-hue), 58%, 88%);
+}
+tr:hover {
+  background-color: hsl(var(--main-bg-hue), 70%, 83%);
+}
+
+/*============================================================================*/
+/*Horizontal Rules*/
+hr {
+  color: var(--text_col);
+  height:0px;
+  border-top:2px dashed;
+  border-bottom: none;
+  max-width: 90%;
+}
