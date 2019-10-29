@@ -137,6 +137,19 @@ def calc_md5(path, buffer_size=65536):
 
 
 if __name__ == "__main__":
-    book = notebook(config_path=os.path.join(os.getcwd(), "test"))
-    book.make_note()
-    book.render_notebook()
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Markdown notebook manager.")
+    parser.add_argument("notedir", type=str, help="Notebook directory path.")
+    parser.add_argument(
+        "--make_note", help="Make a note for today.", action="store_true"
+    )
+    parser.add_argument("--render_all", help="Render all notes.", action="store_true")
+
+    args = parser.parse_args()
+    book = notebook(config_path=args.notedir)
+
+    if args.render_all:
+        book.render_notebook()
+    if args.make_note:
+        book.make_note()
