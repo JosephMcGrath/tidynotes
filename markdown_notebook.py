@@ -4,8 +4,8 @@ import datetime
 import markdown
 import re
 import json
+import hashlib
 
-# TODO: Log the hash of any files rendered,
 # TODO: Accept command-line inputs,
 # TODO: Replacements at the time of rendering,
 # TODO: Heading management (project / task names),
@@ -32,14 +32,15 @@ class notebook:
         self.note_path = os.path.join(self.root_path, self.config["note_path"])
         self.template_path = os.path.join(self.root_path, self.config["template_path"])
         self.notebook_name = self.config["notebook_name"]
+        self.working_path = self.config["working_path"]
 
-    def write(self, file_path: str, content: str):
+    def write(self, file_path: str, content: str, mode: str = "w"):
         "Writes a string to a file."
         dst_dir = os.path.split(file_path)[0]
         if dst_dir != "":
             if not os.path.exists(dst_dir):
                 os.makedirs(dst_dir)
-        with open(file_path, "w", encoding="utf-8") as f:
+        with open(file_path, mode, encoding="utf-8") as f:
             return f.write(content)
 
     def read(self, file_path: str):
@@ -96,7 +97,42 @@ class notebook:
         output = self.env.get_template("page.html").render(
             notebook_name=self.notebook_name, body="\n".join(output)
         )
-        self.write(os.path.join(self.root_path, self.notebook_name + ".html"), output)
+        output_path = os.path.join(self.root_path, self.notebook_name) + ".html"
+        self.write(output_path, output)
+        self.log_file_info(output_path)
+
+    def log_file_info(self, file_path):
+        dst_path = os.path.join(self.root_path, self.working_path, "hash_log.csv")
+        file_info = os.stat(file_path)
+        output = [
+            os.path.relpath(file_path, self.root_path),
+            datetime.datetime.fromtimestamp(file_info.st_ctime).isoformat(),
+            calc_sha256(file_path),
+            calc_md5(file_path),
+            str(file_info.st_size),
+        ]
+        self.write(dst_path, ",".join(output), "a")
+
+
+def hash_file(path, algorithm, buffer_size=65536):
+    "Generic function to calculate the hash of a file."
+    with open(path, "rb") as f:
+        while True:
+            data = f.read(buffer_size)
+            if not data:
+                break
+            algorithm.update(data)
+    return algorithm.hexdigest()
+
+
+def calc_sha256(path, buffer_size=65536):
+    "Calculates the SHA256 of a file."
+    return hash_file(path, hashlib.sha256(), buffer_size)
+
+
+def calc_md5(path, buffer_size=65536):
+    "Calculates the MD5 of a file."
+    return hash_file(path, hashlib.md5(), buffer_size)
 
 
 if __name__ == "__main__":

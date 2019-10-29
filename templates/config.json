@@ -1,6 +1,7 @@
 {
   "note_path":"notes",
   "template_path":"templates",
+  "working_path":"working",
   "notebook_name":"Test",
   "date_formats" : {
     "title": "%Y-%m-%d (%A)",
