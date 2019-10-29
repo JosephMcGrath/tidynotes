@@ -5,15 +5,16 @@ import markdown
 import re
 import json
 import hashlib
+import collections
 
-# TODO: Accept command-line inputs,
 # TODO: Replacements at the time of rendering,
 # TODO: Heading management (project / task names),
 # TODO: To-do list,
 # TODO: Extract (& render) all entires under a single heading,
 # TODO: Cache rendered html to speed up repeated rendering,
 # TODO: Formatting adjustments,
-# TODO: Create notebooks in a target folder,
+# TODO: Create notebooks in a target folder (config & templates),
+# TODO: Backup files to a zip folder,
 
 
 class notebook:
@@ -29,8 +30,7 @@ class notebook:
         elif os.path.isdir(config_path):
             self.root_path = config_path
             self.config_path = os.path.join(config_path, "config.json")
-        with open(self.config_path) as f:
-            self.config = json.load(f)
+        self.config = self.read_json(self.config_path)
         self.note_path = os.path.join(self.root_path, self.config["note_path"])
         self.template_path = os.path.join(self.root_path, self.config["template_path"])
 
@@ -43,10 +43,20 @@ class notebook:
         with open(file_path, mode, encoding="utf-8") as f:
             return f.write(content)
 
+    def write_json(self, file_path: str, content):
+        self.write(file_path, json.dumps(content, indent=2))
+
     def read(self, file_path: str):
         with open(file_path, "r", encoding="utf-8") as f:
             text = f.read()
         return text
+
+    def read_json(self, file_path: str):
+        if os.path.exists(file_path):
+            with open(file_path) as f:
+                return json.load(f, object_pairs_hook=collections.OrderedDict)
+        else:
+            return collections.OrderedDict()
 
     def make_note(self, date=datetime.datetime.today(), force=False):
         dates = self.format_date(date)
