@@ -7,7 +7,6 @@ import json
 import hashlib
 import collections
 
-# TODO: Replacements at the time of rendering,
 # TODO: To-do list,
 # TODO: Extract (& render) all entires under a single heading,
 # TODO: Cache rendered html to speed up repeated rendering,
@@ -15,7 +14,6 @@ import collections
 # TODO: Create notebooks in a target folder (config & templates),
 # TODO: Backup files to a zip folder,
 # TODO: Option to render to multiple locations,
-# TODO: Method to generate a working path,
 
 
 class notebook:
@@ -34,6 +32,9 @@ class notebook:
         self.config = self.read_json(self.config_path)
         self.note_path = os.path.join(self.root_path, self.config["note_path"])
         self.template_path = os.path.join(self.root_path, self.config["template_path"])
+
+    def working_path(self, file_name):
+        return os.path.join(self.root_path, self.config["working_path"], file_name)
 
     def write(self, file_path: str, content: str, mode: str = "w"):
         "Writes a string to a file."
@@ -100,9 +101,7 @@ class notebook:
         output = "\n".join(lines)
 
         # Render-time replacements
-        replacement_path = os.path.join(
-            self.root_path, self.config["working_path"], "render_changes.json"
-        )
+        replacement_path = self.working_path("render_changes.json")
         replacements = self.read_json(replacement_path)
         for x in replacements:
             output = re.sub(x, replacements[x], output)
@@ -125,9 +124,7 @@ class notebook:
         self.log_file_info(output_path)
 
     def log_file_info(self, file_path):
-        dst_path = os.path.join(
-            self.root_path, self.config["working_path"], "hash_log.csv"
-        )
+        dst_path = self.working_path("hash_log.csv")
         file_info = os.stat(file_path)
         output = [
             os.path.relpath(file_path, self.root_path),
@@ -172,15 +169,11 @@ class notebook:
                 self.write(note_file, "\n".join(lines))
 
     def clean_project_list(self):
-        file_path = os.path.join(
-            self.root_path, self.config["working_path"], "project_names.json"
-        )
+        file_path = self.working_path("project_names.json")
         self.clean_headings(self.build_heading_list(file_path, 2))
 
     def clean_task_list(self):
-        file_path = os.path.join(
-            self.root_path, self.config["working_path"], "task_names.json"
-        )
+        file_path = self.working_path("task_names.json")
         self.clean_headings(self.build_heading_list(file_path, 3))
 
     def clean(self):
