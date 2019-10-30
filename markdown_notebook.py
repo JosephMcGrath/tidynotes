@@ -8,13 +8,13 @@ import hashlib
 import collections
 
 # TODO: Replacements at the time of rendering,
-# TODO: Heading management (project / task names),
 # TODO: To-do list,
 # TODO: Extract (& render) all entires under a single heading,
 # TODO: Cache rendered html to speed up repeated rendering,
 # TODO: Formatting adjustments,
 # TODO: Create notebooks in a target folder (config & templates),
 # TODO: Backup files to a zip folder,
+# TODO: Option to render to multiple locations,
 
 
 class notebook:
@@ -121,12 +121,61 @@ class notebook:
         file_info = os.stat(file_path)
         output = [
             os.path.relpath(file_path, self.root_path),
-            datetime.datetime.fromtimestamp(file_info.st_ctime).isoformat(),
+            datetime.datetime.fromtimestamp(file_info.st_mtime).isoformat(),
             calc_sha256(file_path),
             calc_md5(file_path),
             str(file_info.st_size),
         ]
         self.write(dst_path, ",".join(output) + "\n", "a")
+
+    def build_heading_list(self, title_lookup_path, level=2):
+        "Builds a dictionary of all headings in the notebook."
+        projects = self.read_json(title_lookup_path)
+        pattern = re.compile("^#{level} ".format(level="{" + str(level) + "}"))
+        for note_file in self.note_list():
+            lines = self.read(note_file).split("\n")
+            for project in [x for x in lines if re.search(pattern, x)]:
+                project = project.strip()
+                if project not in projects:
+                    projects[project] = project
+        output = collections.OrderedDict()
+        for x in sorted(projects):
+            output[x] = projects[x]
+        self.write_json(title_lookup_path, output)
+        return output
+
+    def clean_headings(self, title_lookup_list):
+        "Uses a provided lookup list to replace titles in the notebook."
+        title_replace = {x for x in title_lookup_list if x != title_lookup_list[x]}
+        if len(title_replace) == 0:
+            return None
+
+        for note_file in self.note_list():
+            write = False
+            lines = self.read(note_file).split("\n")
+            for n, x in enumerate(lines):
+                x = x.strip()
+                if x in title_replace:
+                    write = True
+                    lines[n] = title_lookup_list[x] + "\n"
+            if write:
+                self.write(note_file, "\n".join(lines))
+
+    def clean_project_list(self):
+        file_path = os.path.join(
+            self.root_path, self.config["working_path"], "project_names.json"
+        )
+        self.clean_headings(self.build_heading_list(file_path, 2))
+
+    def clean_task_list(self):
+        file_path = os.path.join(
+            self.root_path, self.config["working_path"], "task_names.json"
+        )
+        self.clean_headings(self.build_heading_list(file_path, 3))
+
+    def clean(self):
+        self.clean_project_list()
+        self.clean_task_list()
 
 
 def hash_file(path, algorithm, buffer_size=65536):
@@ -161,10 +210,18 @@ if __name__ == "__main__":
     parser.add_argument(
         "-r", "--render_all", help="Render all notes.", action="store_true"
     )
+    parser.add_argument(
+        "-c",
+        "--clean_headings",
+        help="Clean headings in the notes.",
+        action="store_true",
+    )
 
     args = parser.parse_args()
     book = notebook(config_path=args.notedir)
 
+    if args.clean_headings:
+        book.clean()
     if args.render_all:
         book.render_notebook()
     if args.make_note:
