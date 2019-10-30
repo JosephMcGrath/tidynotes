@@ -64,11 +64,11 @@ class notebook:
             return collections.OrderedDict()
 
     def make_note(self, date=datetime.datetime.today(), force=False):
-        dates = self.format_date(date)
-        dst_path = os.path.join(self.note_path, dates["path"], dates["file"])
+        date_f = self._format_date(date)
+        dst_path = os.path.join(self.note_path, date_f["path"], date_f["file"])
         if force or not os.path.exists(dst_path):
             template = self.env.get_template("note.md")
-            output = template.render(dates=self.format_date(date))
+            output = template.render(dates=date_f)
             self.write(dst_path, output)
 
     def make_notebook(self, dst_dir):
@@ -87,7 +87,7 @@ class notebook:
             temp_config = self.read_json(os.path.join(template_src, "config.json"))
             self.write_json(os.path.join(dst_dir, "config.json"), temp_config)
 
-    def format_date(self, target_date):
+    def _format_date(self, target_date):
         """Formats a date into useful predefined formats."""
         formats = self.config["date_formats"]
         return {x: target_date.strftime(formats[x]) for x in formats}
@@ -154,7 +154,7 @@ class notebook:
         ]
         self.write(dst_path, ",".join(output) + "\n", "a")
 
-    def build_heading_list(self, title_lookup_path, level=2):
+    def _build_heading_list(self, title_lookup_path, level=2):
         "Builds a dictionary of all headings in the notebook."
         projects = self.read_json(title_lookup_path)
         pattern = re.compile("^#{level} ".format(level="{" + str(level) + "}"))
@@ -170,7 +170,7 @@ class notebook:
         self.write_json(title_lookup_path, output)
         return output
 
-    def clean_headings(self, title_lookup_list):
+    def _clean_headings(self, title_lookup_list):
         "Uses a provided lookup list to replace titles in the notebook."
         title_replace = {x for x in title_lookup_list if x != title_lookup_list[x]}
         if len(title_replace) == 0:
@@ -189,11 +189,11 @@ class notebook:
 
     def clean_project_list(self):
         file_path = self.working_path("project_names.json")
-        self.clean_headings(self.build_heading_list(file_path, 2))
+        self._clean_headings(self._build_heading_list(file_path, 2))
 
     def clean_task_list(self):
         file_path = self.working_path("task_names.json")
-        self.clean_headings(self.build_heading_list(file_path, 3))
+        self._clean_headings(self._build_heading_list(file_path, 3))
 
     def clean(self):
         self.clean_project_list()
