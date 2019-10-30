@@ -94,6 +94,18 @@ a:visited {
   color: --text_col;
 }
 
+/*Admonitions*/
+.admonition {
+  padding-left: 1em;
+  border: 0.25em hsl(var(--main-bg-hue), 5%, 20%) solid;
+  background-color: hsl(var(--main-bg-hue), 85%, 75%);
+  max-width: 75%;
+}
+
+.admonition-title {
+  font-weight: bold;
+}
+
 /*============================================================================*/
 /*All Headings*/
 h1, h2, h3, h4, h5 {
