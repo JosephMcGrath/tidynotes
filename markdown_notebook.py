@@ -15,6 +15,7 @@ import collections
 # TODO: Create notebooks in a target folder (config & templates),
 # TODO: Backup files to a zip folder,
 # TODO: Option to render to multiple locations,
+# TODO: Method to generate a working path,
 
 
 class notebook:
@@ -96,7 +97,16 @@ class notebook:
         lines = markdown_text.split("\n")
         # Add a level to the titles
         lines = [re.sub("^#", "##", x) for x in lines]
-        return "\n".join(lines)
+        output = "\n".join(lines)
+
+        # Render-time replacements
+        replacement_path = os.path.join(
+            self.root_path, self.config["working_path"], "render_changes.json"
+        )
+        replacements = self.read_json(replacement_path)
+        for x in replacements:
+            output = re.sub(x, replacements[x], output)
+        return output
 
     def render_notebook(self):
         "Render the entire notebook to a HTML file."
