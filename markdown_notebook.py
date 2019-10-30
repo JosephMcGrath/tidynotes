@@ -87,7 +87,9 @@ class notebook:
 
     def _render_markdown(self, markdown_text) -> str:
         "Render provided markdown to a HTML string."
-        md = markdown.Markdown(extensions=["fenced_code", "tables", "sane_lists"])
+        md = markdown.Markdown(
+            extensions=["fenced_code", "tables", "sane_lists", "admonition"]
+        )
         return md.convert(markdown_text)
 
     def _preprocess_markdown(self, markdown_text):
