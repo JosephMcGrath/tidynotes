@@ -6,18 +6,21 @@ import re
 import json
 import hashlib
 import collections
+import shutil
 
 # TODO: To-do list,
 # TODO: Extract (& render) all entires under a single heading,
 # TODO: Cache rendered html to speed up repeated rendering,
 # TODO: Formatting adjustments,
-# TODO: Create notebooks in a target folder (config & templates),
 # TODO: Backup files to a zip folder,
 # TODO: Option to render to multiple locations,
 
 
 class notebook:
-    def __init__(self, config_path):
+    def __init__(self, config_path, make_notebook=False):
+        self.script_dir = os.path.dirname(os.path.realpath(__file__))
+        if make_notebook:
+            self.make_notebook(config_path)
         self.read_config(config_path)
         _ = jinja2.FileSystemLoader(self.template_path)
         self.env = jinja2.Environment(loader=_)
@@ -67,6 +70,22 @@ class notebook:
             template = self.env.get_template("note.md")
             output = template.render(dates=self.format_date(date))
             self.write(dst_path, output)
+
+    def make_notebook(self, dst_dir):
+        # Copy templates
+        template_src = os.path.join(self.script_dir, "templates")
+        template_dst = os.path.join(dst_dir, "templates")
+        os.makedirs(os.path.join(dst_dir, "templates"), exist_ok=True)
+        for template in os.listdir(template_src):
+            if not os.path.exists(os.path.join(template_dst, template)):
+                shutil.copy(
+                    os.path.join(template_src, template),
+                    os.path.join(template_dst, template),
+                )
+        # Create config
+        if not os.path.exists(os.path.join(dst_dir, "config.json")):
+            temp_config = self.read_json(os.path.join(template_src, "config.json"))
+            self.write_json(os.path.join(dst_dir, "config.json"), temp_config)
 
     def format_date(self, target_date):
         """Formats a date into useful predefined formats."""
@@ -219,9 +238,15 @@ if __name__ == "__main__":
         help="Clean headings in the notes.",
         action="store_true",
     )
+    parser.add_argument(
+        "-i",
+        "--initialise_notebook",
+        help="Create a blank notebook in the target directory.",
+        action="store_true",
+    )
 
     args = parser.parse_args()
-    book = notebook(config_path=args.notedir)
+    book = notebook(config_path=args.notedir, make_notebook=args.initialise_notebook)
 
     if args.clean_headings:
         book.clean()
