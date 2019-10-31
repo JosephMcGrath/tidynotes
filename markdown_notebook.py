@@ -244,11 +244,11 @@ class notebook:
             write = False
             raw = self.read(note_file)
             for replacement in replacements:
-                if re.search(replacement):
+                if re.search(replacement, raw):
                     write = True
                     raw = re.sub(replacement, replacements[replacement], raw)
             if write:
-                self._write(note_file)
+                self._write(note_file, raw)
 
     def clean(self):
         self.clean_project_list()
