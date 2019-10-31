@@ -8,12 +8,9 @@ import hashlib
 import collections
 import shutil
 
-# TODO: To-do list,
-# TODO: Extract (& render) all entires under a single heading,
 # TODO: Cache rendered html to speed up repeated rendering,
 # TODO: Formatting adjustments,
 # TODO: Backup files to a zip folder,
-# TODO: Option to render to multiple locations,
 
 
 class notebook:
@@ -139,8 +136,10 @@ class notebook:
         ]
         render_args = {**self.config, "body": "\n".join(output)}
         output = self.env.get_template("page.html").render(render_args)
-        # TODO: Write to a separate directory.
-        output_path = os.path.join(self.root_path, output_name) + ".html"
+        dst_dir = os.path.join(self.root_path, "redered")
+        if not os.path.exists(dst_dir):
+            os.makedirs(dst_dir)
+        output_path = os.path.join(dst_dir, output_name) + ".html"
         self.write(output_path, output)
         self.log_file_info(output_path)
 
