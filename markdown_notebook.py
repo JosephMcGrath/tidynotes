@@ -132,27 +132,60 @@ class notebook:
             output = re.sub(x, replacements[x], output)
         return output
 
-    def render_notebook(self):
-        "Render the entire notebook to a HTML file."
-        paths = self.note_list()
-        output = [None] * len(paths)
-        for n, path in enumerate(paths):
-            output[n] = self._render_markdown(
-                self._preprocess_markdown(self.read(path))
-            )
+    def _render_markdown_to_file(self, markdown_list, output_name):
+        "Writes a list of markdown entries to HTML."
+        output = [
+            self._render_markdown(self._preprocess_markdown(x)) for x in markdown_list
+        ]
         render_args = {**self.config, "body": "\n".join(output)}
         output = self.env.get_template("page.html").render(render_args)
-        output_path = (
-            os.path.join(self.root_path, self.config["notebook_name"]) + ".html"
-        )
+        # TODO: Write to a separate directory.
+        output_path = os.path.join(self.root_path, output_name) + ".html"
         self.write(output_path, output)
         self.log_file_info(output_path)
+
+    def render_notebook(self):
+        "Render the entire notebook to a HTML file."
+        output = [self.read(path) for path in self.note_list()]
+        self._render_markdown_to_file(output, self.config["notebook_name"])
+
+    def extract_project(self, project_name):
+        "Extracts all entries for a project and writes them to a HTML file."
+        # TODO: Generalise this method.
+        # Check if the project name's in the replacement list.
+        lookup_table = self.read_json(self.working_path("project_names.json"))
+        title_name = "## " + re.sub("(^#+)", "", project_name).strip()
+        if title_name in lookup_table:
+            title_name = lookup_table[title_name]
+        project_name = re.sub("(^#+)", "", title_name).strip()
+        # Extract the project from all notes:
+        markdown_extract = []
+        for n, path in enumerate(self.note_list()):
+            collect = False
+            temp = re.split("\ufeff|\n", self.read(path))
+            lines_extract = []
+            title = ""
+            for line in temp:
+                if re.search("^# ", line):
+                    title = line + "\n"
+                if line.strip() == title_name:
+                    collect = True
+                elif re.search("^## ", line):
+                    collect = False
+                if collect:
+                    lines_extract.append(line)
+            if len(lines_extract):
+                lines_extract.insert(0, title)
+                markdown_extract.append("\n".join(lines_extract))
+        # Render to HTML
+        if len(markdown_extract):
+            self._render_markdown_to_file(markdown_extract, project_name)
 
     def log_file_info(self, file_path):
         dst_path = self.working_path("hash_log.csv")
         file_info = os.stat(file_path)
         output = [
-            os.path.relpath(file_path, self.root_path),
+            '"' + os.path.relpath(file_path, self.root_path) + '"',
             datetime.datetime.fromtimestamp(file_info.st_mtime).isoformat(),
             calc_sha256(file_path),
             calc_md5(file_path),
@@ -250,6 +283,11 @@ if __name__ == "__main__":
         help="Create a blank notebook in the target directory.",
         action="store_true",
     )
+    parser.add_argument(
+        "-e",
+        "--extract_project",
+        help="Extracts all entries for a single project and renders them to HTML.",
+    )
 
     args = parser.parse_args()
     book = notebook(config_path=args.notedir, make_notebook=args.initialise_notebook)
@@ -260,3 +298,5 @@ if __name__ == "__main__":
         book.render_notebook()
     if args.make_note:
         book.make_note()
+    if args.extract_project is not None:
+        book.extract_project(args.extract_project)
