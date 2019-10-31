@@ -9,8 +9,6 @@ import collections
 import shutil
 
 # TODO: Cache rendered html to speed up repeated rendering,
-# TODO: Formatting adjustments,
-# TODO: Backup files to a zip folder,
 
 
 class notebook:
@@ -184,6 +182,7 @@ class notebook:
             self._render_markdown_to_file(markdown_extract, project_name)
 
     def log_file_info(self, file_path):
+        "Logs information about a file (called after rendering an output)."
         dst_path = self.working_path("hash_log.csv")
         file_info = os.stat(file_path)
         output = [
@@ -229,14 +228,17 @@ class notebook:
                 self.write(note_file, "\n".join(lines))
 
     def clean_project_list(self):
+        "Cleans up project names in the notebook."
         file_path = self.working_path("project_names.json")
         self._clean_headings(self._build_heading_list(file_path, 2))
 
     def clean_task_list(self):
+        "Cleans up task names in the notebook."
         file_path = self.working_path("task_names.json")
         self._clean_headings(self._build_heading_list(file_path, 3))
 
     def corrections(self):
+        "Applies regex replacements to notes."
         replacements = self.read_json(self.working_path("corrections.json"))
         for note_file in self.note_list():
             write = False
