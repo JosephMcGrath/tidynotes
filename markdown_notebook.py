@@ -87,6 +87,12 @@ class notebook:
             temp_config = self.read_json(os.path.join(template_src, "config.json"))
             self.write_json(os.path.join(dst_dir, "config.json"), temp_config)
 
+        # Basic render-time changes file
+        os.makedirs(os.path.join(dst_dir, "working"), exist_ok=True)
+        temp = os.path.join(dst_dir, "working", "render_changes.json")
+        if not os.path.exists(temp):
+            shutil.copy(os.path.join(template_dst, "render_changes.json"), temp)
+
     def _format_date(self, target_date):
         """Formats a date into useful predefined formats."""
         formats = self.config["date_formats"]
