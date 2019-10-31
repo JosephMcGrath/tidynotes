@@ -89,6 +89,9 @@ class notebook:
         temp = os.path.join(dst_dir, "working", "render_changes.json")
         if not os.path.exists(temp):
             shutil.copy(os.path.join(template_dst, "render_changes.json"), temp)
+        temp = os.path.join(dst_dir, "working", "corrections.json")
+        if not os.path.exists(temp):
+            shutil.copy(os.path.join(template_dst, "corrections.json"), temp)
 
     def _format_date(self, target_date):
         """Formats a date into useful predefined formats."""
@@ -233,9 +236,22 @@ class notebook:
         file_path = self.working_path("task_names.json")
         self._clean_headings(self._build_heading_list(file_path, 3))
 
+    def corrections(self):
+        replacements = self.read_json(self.working_path("corrections.json"))
+        for note_file in self.note_list():
+            write = False
+            raw = self.read(note_file)
+            for replacement in replacements:
+                if re.search(replacement):
+                    write = True
+                    raw = re.sub(replacement, replacements[replacement], raw)
+            if write:
+                self.write(note_file)
+
     def clean(self):
         self.clean_project_list()
         self.clean_task_list()
+        self.corrections()
 
 
 def hash_file(path, algorithm, buffer_size=65536):
