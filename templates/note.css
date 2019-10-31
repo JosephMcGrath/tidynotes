@@ -100,6 +100,7 @@ a:visited {
   border: 0.25em hsl(var(--main-bg-hue), 5%, 20%) solid;
   background-color: hsl(var(--main-bg-hue), 85%, 75%);
   max-width: 75%;
+  margin: auto;
 }
 
 .admonition-title {
