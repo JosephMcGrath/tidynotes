@@ -16,11 +16,11 @@ class notebook:
         self.script_dir = os.path.dirname(os.path.realpath(__file__))
         if make_notebook:
             self.make_notebook(config_path)
-        self.read_config(config_path)
+        self._read_config(config_path)
         _ = jinja2.FileSystemLoader(self.template_path)
         self.env = jinja2.Environment(loader=_)
 
-    def read_config(self, config_path):
+    def _read_config(self, config_path):
         if os.path.isfile(config_path):
             self.root_path = os.path.split(config_path)[0]
             self.config_path = config_path
@@ -31,20 +31,20 @@ class notebook:
         self.note_path = os.path.join(self.root_path, self.config["note_path"])
         self.template_path = os.path.join(self.root_path, self.config["template_path"])
 
-    def working_path(self, file_name):
+    def _working_path(self, file_name):
         return os.path.join(self.root_path, self.config["working_path"], file_name)
 
-    def write(self, file_path: str, content: str, mode: str = "w"):
+    def _write(self, file_path: str, content: str, mode: str = "w"):
         "Writes a string to a file."
         dst_dir = os.path.split(file_path)[0]
         if dst_dir != "":
             if not os.path.exists(dst_dir):
                 os.makedirs(dst_dir)
         with open(file_path, mode, encoding="utf-8") as f:
-            return f.write(content)
+            f.write(content)
 
-    def write_json(self, file_path: str, content):
-        self.write(file_path, json.dumps(content, indent=2))
+    def _write_json(self, file_path: str, content):
+        self._write(file_path, json.dumps(content, indent=2))
 
     def read(self, file_path: str):
         with open(file_path, "r", encoding="utf-8") as f:
@@ -64,7 +64,7 @@ class notebook:
         if force or not os.path.exists(dst_path):
             template = self.env.get_template("note.md")
             output = template.render(dates=date_f)
-            self.write(dst_path, output)
+            self._write(dst_path, output)
 
     def make_notebook(self, dst_dir):
         # Copy templates
@@ -80,7 +80,7 @@ class notebook:
         # Create config
         if not os.path.exists(os.path.join(dst_dir, "config.json")):
             temp_config = self.read_json(os.path.join(template_src, "config.json"))
-            self.write_json(os.path.join(dst_dir, "config.json"), temp_config)
+            self._write_json(os.path.join(dst_dir, "config.json"), temp_config)
 
         # Basic render-time changes file
         os.makedirs(os.path.join(dst_dir, "working"), exist_ok=True)
@@ -124,7 +124,7 @@ class notebook:
         output = "\n".join(lines)
 
         # Render-time replacements
-        replacement_path = self.working_path("render_changes.json")
+        replacement_path = self._working_path("render_changes.json")
         replacements = self.read_json(replacement_path)
         for x in replacements:
             output = re.sub(x, replacements[x], output)
@@ -141,19 +141,19 @@ class notebook:
         if not os.path.exists(dst_dir):
             os.makedirs(dst_dir)
         output_path = os.path.join(dst_dir, output_name) + ".html"
-        self.write(output_path, output)
-        self.log_file_info(output_path)
+        self._write(output_path, output)
+        self._log_file_info(output_path)
 
     def render_notebook(self):
         "Render the entire notebook to a HTML file."
         output = [self.read(path) for path in self.note_list()]
         self._render_markdown_to_file(output, self.config["notebook_name"])
 
-    def extract_project(self, project_name):
+    def render_project(self, project_name):
         "Extracts all entries for a project and writes them to a HTML file."
         # TODO: Generalise this method.
         # Check if the project name's in the replacement list.
-        lookup_table = self.read_json(self.working_path("project_names.json"))
+        lookup_table = self.read_json(self._working_path("project_names.json"))
         title_name = "## " + re.sub("(^#+)", "", project_name).strip()
         if title_name in lookup_table:
             title_name = lookup_table[title_name]
@@ -181,9 +181,9 @@ class notebook:
         if len(markdown_extract):
             self._render_markdown_to_file(markdown_extract, project_name)
 
-    def log_file_info(self, file_path):
+    def _log_file_info(self, file_path):
         "Logs information about a file (called after rendering an output)."
-        dst_path = self.working_path("hash_log.csv")
+        dst_path = self._working_path("hash_log.csv")
         file_info = os.stat(file_path)
         output = [
             '"' + os.path.relpath(file_path, self.root_path) + '"',
@@ -192,7 +192,7 @@ class notebook:
             calc_md5(file_path),
             str(file_info.st_size),
         ]
-        self.write(dst_path, ",".join(output) + "\n", "a")
+        self._write(dst_path, ",".join(output) + "\n", "a")
 
     def _build_heading_list(self, title_lookup_path, level=2):
         "Builds a dictionary of all headings in the notebook."
@@ -207,7 +207,7 @@ class notebook:
         output = collections.OrderedDict()
         for x in sorted(projects):
             output[x] = projects[x]
-        self.write_json(title_lookup_path, output)
+        self._write_json(title_lookup_path, output)
         return output
 
     def _clean_headings(self, title_lookup_list):
@@ -225,21 +225,21 @@ class notebook:
                     write = True
                     lines[n] = title_lookup_list[x] + "\n"
             if write:
-                self.write(note_file, "\n".join(lines))
+                self._write(note_file, "\n".join(lines))
 
     def clean_project_list(self):
         "Cleans up project names in the notebook."
-        file_path = self.working_path("project_names.json")
+        file_path = self._working_path("project_names.json")
         self._clean_headings(self._build_heading_list(file_path, 2))
 
     def clean_task_list(self):
         "Cleans up task names in the notebook."
-        file_path = self.working_path("task_names.json")
+        file_path = self._working_path("task_names.json")
         self._clean_headings(self._build_heading_list(file_path, 3))
 
     def corrections(self):
         "Applies regex replacements to notes."
-        replacements = self.read_json(self.working_path("corrections.json"))
+        replacements = self.read_json(self._working_path("corrections.json"))
         for note_file in self.note_list():
             write = False
             raw = self.read(note_file)
@@ -248,7 +248,7 @@ class notebook:
                     write = True
                     raw = re.sub(replacement, replacements[replacement], raw)
             if write:
-                self.write(note_file)
+                self._write(note_file)
 
     def clean(self):
         self.clean_project_list()
@@ -316,4 +316,4 @@ if __name__ == "__main__":
     if args.make_note:
         book.make_note()
     if args.extract_project is not None:
-        book.extract_project(args.extract_project)
+        book.render_project(args.extract_project)
