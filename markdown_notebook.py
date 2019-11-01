@@ -181,6 +181,13 @@ class notebook:
         if len(markdown_extract):
             self._render_markdown_to_file(markdown_extract, project_name)
 
+    def render_all_projects(self):
+        "Renders a HTML output for all projects."
+        temp = self._build_heading_list(self._working_path("project_names.json"), 2)
+        projects = set([temp[x] for x in temp])
+        for project in projects:
+            self.render_project(project)
+
     def _log_file_info(self, file_path):
         "Logs information about a file (called after rendering an output)."
         dst_path = self._working_path("hash_log.csv")
@@ -305,6 +312,12 @@ if __name__ == "__main__":
         "--extract_project",
         help="Extracts all entries for a single project and renders them to HTML.",
     )
+    parser.add_argument(
+        "-a",
+        "--extract_all",
+        help="Extracts all entries for a each project and renders them to HTML.",
+        action="store_true",
+    )
 
     args = parser.parse_args()
     book = notebook(config_path=args.notedir, make_notebook=args.initialise_notebook)
@@ -317,3 +330,5 @@ if __name__ == "__main__":
         book.make_note()
     if args.extract_project is not None:
         book.render_project(args.extract_project)
+    if args.extract_all:
+        book.render_all_projects()
