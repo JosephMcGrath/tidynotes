@@ -8,8 +8,6 @@ import hashlib
 import collections
 import shutil
 
-# TODO: Cache rendered html to speed up repeated rendering,
-
 
 class notebook:
     def __init__(self, config_path, make_notebook=False):
@@ -137,7 +135,7 @@ class notebook:
         ]
         render_args = {**self.config, "body": "\n".join(output)}
         output = self.env.get_template("page.html").render(render_args)
-        dst_dir = os.path.join(self.root_path, "redered")
+        dst_dir = os.path.join(self.root_path, "rendered")
         if not os.path.exists(dst_dir):
             os.makedirs(dst_dir)
         output_path = os.path.join(dst_dir, output_name) + ".html"
@@ -151,7 +149,7 @@ class notebook:
 
     def render_project(self, project_name):
         "Extracts all entries for a project and writes them to a HTML file."
-        # TODO: Generalise this method.
+        # TODO: Generalise this method for tasks.
         # Check if the project name's in the replacement list.
         lookup_table = self.read_json(self._working_path("project_names.json"))
         title_name = "## " + re.sub("(^#+)", "", project_name).strip()
