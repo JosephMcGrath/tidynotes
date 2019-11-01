@@ -314,11 +314,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "-m", "--make_note", help="Make a note for today.", action="store_true"
     )
+    parser.add_argument("-d", "--make_day", help="Make notes for a specific day.")
     parser.add_argument(
-        "-d", "--make_day", help="Make notes for a specific day."
-    )
-    parser.add_argument(
-        "-s", "--make_series", help="Make notes for n days in the future."
+        "-s", "--make_series", help="Make notes for n days in the future.", type=int
     )
     parser.add_argument(
         "-r", "--render_all", help="Render all notes.", action="store_true"
@@ -356,6 +354,8 @@ if __name__ == "__main__":
         book.render_notebook()
     if args.make_note:
         book.make_note()
+    if args.make_day is not None:
+        book.make_note_str(args.make_day)
     if args.make_series is not None:
         book.make_note_series(args.make_series)
     if args.extract_project is not None:
