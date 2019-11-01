@@ -57,12 +57,24 @@ class notebook:
             return collections.OrderedDict()
 
     def make_note(self, date=datetime.datetime.today(), force=False):
+        "Generates and writes a note for the specified date."
         date_f = self._format_date(date)
         dst_path = os.path.join(self.note_path, date_f["path"], date_f["file"])
         if force or not os.path.exists(dst_path):
             template = self.env.get_template("note.md")
             output = template.render(dates=date_f)
             self._write(dst_path, output)
+
+    def make_note_series(
+        self,
+        n_steps,
+        start=datetime.datetime.today(),
+        step=datetime.timedelta(days=1),
+        force=False,
+    ):
+        "Generates and writes a series of notes."
+        for step_n in range(n_steps):
+            self.make_note(start + step * step_n)
 
     def make_notebook(self, dst_dir):
         # Copy templates
@@ -291,6 +303,9 @@ if __name__ == "__main__":
         "-m", "--make_note", help="Make a note for today.", action="store_true"
     )
     parser.add_argument(
+        "-s", "--make_series", help="Make notes for n days in the future."
+    )
+    parser.add_argument(
         "-r", "--render_all", help="Render all notes.", action="store_true"
     )
     parser.add_argument(
@@ -326,6 +341,8 @@ if __name__ == "__main__":
         book.render_notebook()
     if args.make_note:
         book.make_note()
+    if args.make_series is not None:
+        book.make_note_series(args.make_series)
     if args.extract_project is not None:
         book.render_project(args.extract_project)
     if args.extract_all:
