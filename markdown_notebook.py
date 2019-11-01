@@ -65,6 +65,10 @@ class notebook:
             output = template.render(dates=date_f)
             self._write(dst_path, output)
 
+    def make_note_str(self, datestr, force=False):
+        "Generates and writes a note for a date specified as a string."
+        self.make_note(self._parse_date(datestr), force)
+
     def make_note_series(
         self,
         n_steps,
@@ -105,6 +109,14 @@ class notebook:
         """Formats a date into useful predefined formats."""
         formats = self.config["date_formats"]
         return {x: target_date.strftime(formats[x]) for x in formats}
+
+    def _parse_date(self, input_date):
+        format_list = self.config["date_formats"]
+        for format in self.config["date_formats"]:
+            try:
+                return datetime.datetime.strptime(input_date, format_list[format])
+            except:
+                pass
 
     def note_list(self):
         """
@@ -301,6 +313,9 @@ if __name__ == "__main__":
     parser.add_argument("notedir", type=str, help="Notebook directory path.")
     parser.add_argument(
         "-m", "--make_note", help="Make a note for today.", action="store_true"
+    )
+    parser.add_argument(
+        "-d", "--make_day", help="Make notes for a specific day."
     )
     parser.add_argument(
         "-s", "--make_series", help="Make notes for n days in the future."
