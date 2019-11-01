@@ -16,3 +16,4 @@ The script is designed to be called from the command-line. It takes a directory 
 * ```-r```/```--render_all``` merges all markdown files and renders them into a single html output,
 * ```-c```/```--clean_headings``` runs a simple heading cleanup routine and runs user-set regex over all notes,
 * ```-e```/```--extract_project``` extracts and renders the notes for a specific project,
+* ```-a```/```--extract_all``` extracts and renders the notes for all projects,
