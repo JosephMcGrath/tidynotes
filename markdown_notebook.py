@@ -51,7 +51,7 @@ class notebook:
 
     def read_json(self, file_path: str):
         if os.path.exists(file_path):
-            with open(file_path) as f:
+            with open(file_path, encoding="utf-8") as f:
                 return json.load(f, object_pairs_hook=collections.OrderedDict)
         else:
             return collections.OrderedDict()
