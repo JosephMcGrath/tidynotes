@@ -174,6 +174,7 @@ class notebook:
     def render_project(self, project_name):
         "Extracts all entries for a project and writes them to a HTML file."
         # TODO: Generalise this method for tasks.
+        # TODO: Accept multiple projects,
         # Check if the project name's in the replacement list.
         lookup_table = self.read_json(self._working_path("project_names.json"))
         title_name = "## " + re.sub("(^#+)", "", project_name).strip()
@@ -272,12 +273,12 @@ class notebook:
         for note_file in self.note_list():
             write = False
             raw = self.read(note_file)
+            output = self.read(note_file)
             for replacement in replacements:
-                if re.search(replacement, raw):
-                    write = True
-                    raw = re.sub(replacement, replacements[replacement], raw)
-            if write:
-                self._write(note_file, raw)
+                if re.search(replacement, output):
+                    output = re.sub(replacement, replacements[replacement], output)
+            if raw != output:
+                self._write(note_file, output)
 
     def clean(self):
         self.clean_project_list()
