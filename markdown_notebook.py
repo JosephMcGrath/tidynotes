@@ -174,7 +174,6 @@ class notebook:
     def render_project(self, project_name):
         "Extracts all entries for a project and writes them to a HTML file."
         # TODO: Generalise this method for tasks.
-        # TODO: Accept multiple projects,
         # Check if the project name's in the replacement list.
         lookup_table = self.read_json(self._working_path("project_names.json"))
         title_name = "## " + re.sub("(^#+)", "", project_name).strip()
