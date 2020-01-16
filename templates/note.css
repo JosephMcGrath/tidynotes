@@ -45,7 +45,7 @@ code[class="sql"] {
   background-color: hsl(120, var(--code-saturation), var(--code-lightness));
 }
 
-code[class="path"], code[class="sha256"] {
+code[class="path"], code[class="sha256"], code[class="sha1"], code[class="md5"] {
   background-color: hsl(0, var(--code-saturation), var(--code-lightness));
 }
 
@@ -60,6 +60,11 @@ code[class="python"], code[class="R"] {
 code[class="equation"] {
   background-color: #000000;
   color: #ffffff;
+}
+
+code[class="batch"] {
+  background-color: #0b0c52;
+  color: #bebfc6;
 }
 
 /*Code in a table*/
@@ -221,4 +226,25 @@ hr {
   border-top:2px dashed;
   border-bottom: none;
   max-width: 90%;
+}
+
+/*============================================================================*/
+/*Print Styles*/
+@media print {
+  body {
+    margin: 0;
+    color: #000;
+    background-color: #fff;
+    font-family: serif;
+    font-size: 12pt;
+  }
+  h1 {font-size: 16pt;}
+  h2 {font-size: 14pt;}
+  h2, h3, h4, h5, h6 {break-after: avoid-page;}
+  table, blockquote {page-break-inside: avoid;}
+  table {border: 2px solid 000;}
+  p a:after {
+    content: " (" attr(href) ")";
+    font-size: 80%;
+  }
 }
