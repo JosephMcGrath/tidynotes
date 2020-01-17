@@ -1,0 +1,4 @@
+include templates/*.json
+include templates/*.css
+include templates/*.md
+include templates/*.html
