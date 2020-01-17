@@ -11,7 +11,7 @@ def main():
     parser = argparse.ArgumentParser(description="Markdown notebook manager.")
     parser.add_argument("notedir", type=str, help="Notebook directory path.")
     parser.add_argument(
-        "-m", "--make_note", help="Make a note for today.", action="store_true"
+        "-g", "--generate_note", help="Make a note for today.", action="store_true"
     )
     parser.add_argument("-d", "--make_day", help="Make notes for a specific day.")
     parser.add_argument(

@@ -11,7 +11,7 @@ Inside each note:
 
 The script is designed to be called from the command-line. It takes a directory passed as a positional argument and a number of flags:
 
-* ```-m```/```--make_note``` generates a note for the current day,
+* ```-g```/```--generate_note``` generates a note for the current day,
 * ```-s```/```--make_series``` generates notes for n days in the future,
 * ```-d```/```--make_day``` generates notes a day specified as a text value,
 * ```-i```/```--initialise_notebook``` generates a blank notebook in the directory,
