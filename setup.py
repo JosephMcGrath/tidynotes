@@ -35,5 +35,5 @@ setup(
         "re",
         "shutil",
     ],
-    # TODO: entry_points={"console_scripts": [""]},
+    entry_points={"console_scripts": ["tidynotes=tidynotes.__main__:main"]},
 )

@@ -1,6 +1,11 @@
+import os
+
 from tidynotes import notebook
 
-if __name__ == "__main__":
+# # TODO: These could probably be entry points too?
+
+
+def main():
     import argparse
 
     parser = argparse.ArgumentParser(description="Markdown notebook manager.")
@@ -40,6 +45,7 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
+    note_dir = config_path = args.notedir or os.getcwd()
     book = notebook(config_path=args.notedir, make_notebook=args.initialise_notebook)
 
     if args.clean_headings:
@@ -56,3 +62,7 @@ if __name__ == "__main__":
         book.render_project(args.extract_project)
     if args.extract_all:
         book.render_all_projects()
+
+
+if __name__ == "__main__":
+    main()
