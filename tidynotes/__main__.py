@@ -9,7 +9,9 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(description="Markdown notebook manager.")
-    parser.add_argument("notedir", type=str, help="Notebook directory path.")
+    parser.add_argument(
+        "notedir", type=str, help="Notebook directory path.", default=os.getcwd()
+    )
     parser.add_argument(
         "-g", "--generate_note", help="Make a note for today.", action="store_true"
     )
@@ -45,8 +47,9 @@ def main():
     )
 
     args = parser.parse_args()
-    note_dir = config_path = args.notedir or os.getcwd()
-    book = notebook(config_path=args.notedir, make_notebook=args.initialise_notebook)
+    book = notebook.notebook(
+        config_path=args.notedir, make_notebook=args.initialise_notebook
+    )
 
     if args.clean_headings:
         book.clean()
