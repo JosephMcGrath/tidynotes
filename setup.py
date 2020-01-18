@@ -23,17 +23,6 @@ setup(
     ],
     packages=["tidynotes"],
     include_package_data=True,
-    install_requires=[
-        "argparse",
-        "datetime",
-        "collections",
-        "hashlib",
-        "jinja2",
-        "json",
-        "markdown",
-        "os",
-        "re",
-        "shutil",
-    ],
+    install_requires=["jinja2", "markdown"],
     entry_points={"console_scripts": ["tidynotes=tidynotes.__main__:main"]},
 )
