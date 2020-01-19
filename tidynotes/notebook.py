@@ -8,6 +8,11 @@ import hashlib
 import collections
 import shutil
 
+# TODO: Template generation should be done with pkg_resources, not __file__.
+# https://setuptools.readthedocs.io/en/latest/setuptools.html#accessing-data-files-at-runtime.
+# TODO: Also don't need to import *all* the templates? A config file isn't really needed.
+# TODO: A mechanism to update templates (e.g. css).
+# TODO: A mechanism to ignore empty notes (no non-title lines?).
 
 class Tidybook:
     def __init__(self, config_path, make_notebook=False):
