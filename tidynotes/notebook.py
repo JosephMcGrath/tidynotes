@@ -8,10 +8,18 @@ import hashlib
 import collections
 import pkg_resources
 
-# TODO: A mechanism to update templates (e.g. css).
-
 
 class Tidybook:
+    resource_map = {
+        "config.json": "",
+        "corrections.json": "working",
+        "note.css": "templates",
+        "note.md": "templates",
+        "page.html": "templates",
+        "render_changes.json": "working",
+    }
+    template_src = "templates"
+
     def __init__(self, config_path, make_notebook=False):
         self.script_dir = os.path.dirname(os.path.realpath(__file__))
         if make_notebook:
@@ -100,28 +108,20 @@ class Tidybook:
         for step_n in range(n_steps):
             self.make_note(start + step * step_n)
 
-    def make_notebook(self, dst_dir):
-        resource_map = {
-            "config.json": "",
-            "corrections.json": "working",
-            "note.css": "templates",
-            "note.md": "templates",
-            "page.html": "templates",
-            "render_changes.json": "working",
-        }
+    def make_template_item(self, src_path, dst_path, overwrite=False):
+        if not os.path.exists(dst_path) or overwrite:
+            with open(dst_path, "wb") as f:
+                raw = pkg_resources.resource_string(__name__, src_path)
+                f.write(raw)
 
-        for resource_dir in {resource_map[x] for x in resource_map}:
+    def make_notebook(self, dst_dir):
+        for resource_dir in {self.resource_map[x] for x in self.resource_map}:
             if resource_dir:
                 os.makedirs(os.path.join(dst_dir, resource_dir), exist_ok=True)
-
-        template_src = "templates"
-        for template in resource_map:
-            src_path = os.path.join(template_src, template)
-            dst_path = os.path.join(dst_dir, resource_map[template], template)
-            if not os.path.exists(dst_path):
-                with open(dst_path, "wb") as f:
-                    raw = pkg_resources.resource_string(__name__, src_path)
-                    f.write(raw)
+        for template in self.resource_map:
+            src_path = os.path.join(self.template_src, template)
+            dst_path = os.path.join(dst_dir, self.resource_map[template], template)
+            self.make_template_item(src_path, dst_path, overwrite=False)
 
     def _format_date(self, target_date):
         """Formats a date into useful predefined formats."""
