@@ -10,7 +10,7 @@ def main():
 
     parser = argparse.ArgumentParser(description="Markdown notebook manager.")
     parser.add_argument(
-        "notedir", type=str, help="Notebook directory path.", default=os.getcwd()
+        "-notedir", type=str, help="Notebook directory path.", default=os.getcwd()
     )
     parser.add_argument(
         "-g", "--generate_note", help="Make a note for today.", action="store_true"
