@@ -1,4 +1,2 @@
-include templates/*.json
-include templates/*.css
-include templates/*.md
-include templates/*.html
+recursive-include tidynotes *.json *.css *.md*.html
+include LICENSE
