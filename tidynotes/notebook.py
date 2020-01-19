@@ -288,6 +288,7 @@ class Tidybook:
 
     def corrections(self):
         "Applies regex replacements to notes."
+        # TODO: Repeadedly call until it's the same.
         replacements = self.read_json(self._working_path("corrections.json"))
         for note_file in self.note_list():
             write = False
