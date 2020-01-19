@@ -67,7 +67,7 @@ class Tidybook:
         non_empty = [
             x for x in re.findall("(?i)\n[^#][\w]+", self.read(file_path)) if x.strip()
         ]
-        return len(test) > threshold
+        return len(non_empty) > threshold
 
     def read_json(self, file_path: str):
         if os.path.exists(file_path):
