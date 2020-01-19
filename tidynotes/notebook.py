@@ -12,7 +12,7 @@ import shutil
 # https://setuptools.readthedocs.io/en/latest/setuptools.html#accessing-data-files-at-runtime.
 # TODO: Also don't need to import *all* the templates? A config file isn't really needed.
 # TODO: A mechanism to update templates (e.g. css).
-# TODO: A mechanism to ignore empty notes (no non-title lines?).
+
 
 class Tidybook:
     def __init__(self, config_path, make_notebook=False):
@@ -57,6 +57,20 @@ class Tidybook:
         with open(file_path, "r", encoding="utf-8") as f:
             text = f.read()
         return text
+
+    def is_empty(self, file_path: str, threshold: int = 0) -> bool:
+        """
+        Checks if a markdown note has any lines that are not a title or blank.
+        A threshold of blank lines can be passed in (a negative threshold will
+        always return True).
+        """
+        # TODO: Threshold as a part of the config file?
+        if threshold < 0:
+            return True
+        non_empty = [
+            x for x in re.findall("(?i)\n[^#][\w]+", self.read(file_path)) if x.strip()
+        ]
+        return len(test) > threshold
 
     def read_json(self, file_path: str):
         if os.path.exists(file_path):
@@ -177,7 +191,7 @@ class Tidybook:
 
     def render_notebook(self):
         "Render the entire notebook to a HTML file."
-        output = [self.read(path) for path in self.note_list()]
+        output = [self.read(path) for path in self.note_list() if self.is_empty(path)]
         self._render_markdown_to_file(output, self.config["notebook_name"])
 
     def render_project(self, project_name):
@@ -192,6 +206,8 @@ class Tidybook:
         # Extract the project from all notes:
         markdown_extract = []
         for n, path in enumerate(self.note_list()):
+            if self.is_empty(path):
+                continue
             collect = False
             temp = re.split("\ufeff|\n", self.read(path))
             lines_extract = []
