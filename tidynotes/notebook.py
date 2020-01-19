@@ -9,7 +9,7 @@ import collections
 import shutil
 
 
-class notebook:
+class Tidybook:
     def __init__(self, config_path, make_notebook=False):
         self.script_dir = os.path.dirname(os.path.realpath(__file__))
         if make_notebook:

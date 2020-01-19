@@ -47,7 +47,7 @@ def main():
     )
 
     args = parser.parse_args()
-    book = notebook.notebook(
+    book = notebook.Tidybook(
         config_path=args.notedir, make_notebook=args.initialise_notebook
     )
 
