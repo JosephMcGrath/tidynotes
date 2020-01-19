@@ -55,7 +55,7 @@ def main():
         book.clean()
     if args.render_all:
         book.render_notebook()
-    if args.make_note:
+    if args.generate_note:
         book.make_note()
     if args.make_day is not None:
         book.make_note_str(args.make_day)
