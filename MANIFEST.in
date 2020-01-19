@@ -1,2 +1,2 @@
-recursive-include tidynotes *.json *.css *.md *.html
+graft src
 include LICENSE
