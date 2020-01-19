@@ -6,11 +6,8 @@ import re
 import json
 import hashlib
 import collections
-import shutil
+import pkg_resources
 
-# TODO: Template generation should be done with pkg_resources, not __file__.
-# https://setuptools.readthedocs.io/en/latest/setuptools.html#accessing-data-files-at-runtime.
-# TODO: Also don't need to import *all* the templates? A config file isn't really needed.
 # TODO: A mechanism to update templates (e.g. css).
 
 
@@ -104,29 +101,27 @@ class Tidybook:
             self.make_note(start + step * step_n)
 
     def make_notebook(self, dst_dir):
-        # Copy templates
-        template_src = os.path.join(self.script_dir, "templates")
-        template_dst = os.path.join(dst_dir, "templates")
-        os.makedirs(os.path.join(dst_dir, "templates"), exist_ok=True)
-        for template in os.listdir(template_src):
-            if not os.path.exists(os.path.join(template_dst, template)):
-                shutil.copy(
-                    os.path.join(template_src, template),
-                    os.path.join(template_dst, template),
-                )
-        # Create config
-        if not os.path.exists(os.path.join(dst_dir, "config.json")):
-            temp_config = self.read_json(os.path.join(template_src, "config.json"))
-            self._write_json(os.path.join(dst_dir, "config.json"), temp_config)
+        resource_map = {
+            "config.json": "",
+            "corrections.json": "working",
+            "note.css": "templates",
+            "note.md": "templates",
+            "page.html": "templates",
+            "render_changes.json": "working",
+        }
 
-        # Basic render-time changes file
-        os.makedirs(os.path.join(dst_dir, "working"), exist_ok=True)
-        temp = os.path.join(dst_dir, "working", "render_changes.json")
-        if not os.path.exists(temp):
-            shutil.copy(os.path.join(template_dst, "render_changes.json"), temp)
-        temp = os.path.join(dst_dir, "working", "corrections.json")
-        if not os.path.exists(temp):
-            shutil.copy(os.path.join(template_dst, "corrections.json"), temp)
+        for resource_dir in {resource_map[x] for x in resource_map}:
+            if resource_dir:
+                os.makedirs(os.path.join(dst_dir, resource_dir), exist_ok=True)
+
+        template_src = "templates"
+        for template in resource_map:
+            src_path = os.path.join(template_src, template)
+            dst_path = os.path.join(dst_dir, resource_map[template], template)
+            if not os.path.exists(dst_path):
+                with open(dst_path, "wb") as f:
+                    raw = pkg_resources.resource_string(__name__, src_path)
+                    f.write(raw)
 
     def _format_date(self, target_date):
         """Formats a date into useful predefined formats."""

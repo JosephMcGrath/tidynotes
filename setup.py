@@ -10,7 +10,7 @@ README = (HERE / "README.md").read_text()
 # This call to setup() does all the work
 setup(
     name="tidynotes",
-    version="20.01.05",
+    version="20.01.06",
     description="A simple digital notebook using Markdown.",
     long_description=README,
     long_description_content_type="text/markdown",
