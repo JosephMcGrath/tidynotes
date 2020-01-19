@@ -48,7 +48,7 @@ def main():
 
     args = parser.parse_args()
     book = notebook.Tidybook(
-        config_path=args.notedir, make_notebook=args.initialise_notebook
+        config_path=args.notedir, initialise=args.initialise_notebook
     )
 
     if args.clean_headings:

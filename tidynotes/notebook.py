@@ -20,9 +20,10 @@ class Tidybook:
     }
     template_src = "templates"
 
-    def __init__(self, config_path, make_notebook=False):
+    def __init__(self, config_path, initialise=None):
         self.script_dir = os.path.dirname(os.path.realpath(__file__))
-        if make_notebook:
+        self.initialise = initialise
+        if initialise:
             self.make_notebook(config_path)
         self._read_config(config_path)
         _ = jinja2.FileSystemLoader(self.template_path)
@@ -35,7 +36,6 @@ class Tidybook:
             self.config_path = config_path
         elif os.path.isdir(config_path):
             if len(os.listdir(config_path)) == 0:
-                print(f"{config_path} is an empty folder - creating a new notebook")
                 self.make_notebook(config_path)
             self.root_path = config_path
             self.config_path = os.path.join(config_path, "config.json")
