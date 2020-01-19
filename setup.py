@@ -1,5 +1,5 @@
 import pathlib
-from setuptools import setup
+from setuptools import setup, find_packages
 
 # The directory containing this file
 HERE = pathlib.Path(__file__).parent
@@ -21,7 +21,7 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3",
     ],
-    packages=["tidynotes"],
+    packages=find_packages(),
     include_package_data=True,
     install_requires=["jinja2", "markdown"],
     entry_points={"console_scripts": ["tidynotes=tidynotes.__main__:main"]},
