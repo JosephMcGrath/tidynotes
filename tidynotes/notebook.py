@@ -19,10 +19,14 @@ class Tidybook:
         self.env = jinja2.Environment(loader=_)
 
     def _read_config(self, config_path):
+        assert os.path.exists(config_path)
         if os.path.isfile(config_path):
             self.root_path = os.path.split(config_path)[0]
             self.config_path = config_path
         elif os.path.isdir(config_path):
+            if len(os.listdir(config_path)) == 0:
+                print(f"{config_path} is an empty folder - creating a new notebook")
+                self.make_notebook(config_path)
             self.root_path = config_path
             self.config_path = os.path.join(config_path, "config.json")
         self.config = self.read_json(self.config_path)
