@@ -1,2 +1,2 @@
-recursive-include tidynotes *.json *.css *.md*.html
+recursive-include tidynotes *.json *.css *.md *.html
 include LICENSE
