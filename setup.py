@@ -6,11 +6,13 @@ HERE = pathlib.Path(__file__).parent
 
 # The text of the README file
 README = (HERE / "readme.md").read_text()
+with open(HERE / "readme.md", encoding = "utf-8") as f:
+    README = f.read()
 
 # This call to setup() does all the work
 setup(
     name="tidynotes",
-    version="20.01.07",
+    version="20.01.08",
     description="A simple digital notebook using Markdown.",
     long_description=README,
     long_description_content_type="text/markdown",
