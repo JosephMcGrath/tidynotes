@@ -47,10 +47,13 @@ def main():
     )
 
     args = parser.parse_args()
+    if len(os.listdir(args.notedir)) > 0 and not args.initialise_notebook:
+        print("Use the '-i' argument to force initialisation in a non-empty folder.")
+        return
+
     book = notebook.Tidybook(
         config_path=args.notedir, initialise=args.initialise_notebook
     )
-
     if args.clean_headings:
         book.clean()
     if args.render_all:
