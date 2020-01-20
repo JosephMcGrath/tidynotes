@@ -47,7 +47,18 @@ def main():
     )
 
     args = parser.parse_args()
-    if len(os.listdir(args.notedir)) > 0 and not args.initialise_notebook:
+    active = any(
+        [
+            args.initialise_notebook,
+            args.clean_headings,
+            args.render_all,
+            args.generate_note,
+            args.make_day is not None,
+            args.make_series is not None,
+            args.extract_project is not None,
+        ]
+    )
+    if len(os.listdir(args.notedir)) > 0 and not active:
         print("Use the '-i' argument to force initialisation in a non-empty folder.")
         return
 
