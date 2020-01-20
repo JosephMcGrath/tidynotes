@@ -6,23 +6,37 @@ import re
 import json
 import hashlib
 import collections
-import shutil
+import pkg_resources
 
 
-class notebook:
-    def __init__(self, config_path, make_notebook=False):
+class Tidybook:
+    resource_map = {
+        "config.json": "",
+        "corrections.json": "working",
+        "note.css": "templates",
+        "note.md": "templates",
+        "page.html": "templates",
+        "render_changes.json": "working",
+    }
+    template_src = "templates"
+
+    def __init__(self, config_path, initialise=None):
         self.script_dir = os.path.dirname(os.path.realpath(__file__))
-        if make_notebook:
+        self.initialise = initialise
+        if initialise:
             self.make_notebook(config_path)
         self._read_config(config_path)
         _ = jinja2.FileSystemLoader(self.template_path)
         self.env = jinja2.Environment(loader=_)
 
     def _read_config(self, config_path):
+        assert os.path.exists(config_path)
         if os.path.isfile(config_path):
             self.root_path = os.path.split(config_path)[0]
             self.config_path = config_path
         elif os.path.isdir(config_path):
+            if len(os.listdir(config_path)) == 0:
+                self.make_notebook(config_path)
             self.root_path = config_path
             self.config_path = os.path.join(config_path, "config.json")
         self.config = self.read_json(self.config_path)
@@ -48,6 +62,20 @@ class notebook:
         with open(file_path, "r", encoding="utf-8") as f:
             text = f.read()
         return text
+
+    def is_empty(self, file_path: str, threshold: int = 0) -> bool:
+        """
+        Checks if a markdown note has any lines that are not a title or blank.
+        A threshold of blank lines can be passed in (a negative threshold will
+        always return True).
+        """
+        # TODO: Threshold as a part of the config file?
+        if threshold < 0:
+            return True
+        non_empty = [
+            x for x in re.findall("(?i)\n[^#][\w]+", self.read(file_path)) if x.strip()
+        ]
+        return len(non_empty) > threshold
 
     def read_json(self, file_path: str):
         if os.path.exists(file_path):
@@ -80,30 +108,20 @@ class notebook:
         for step_n in range(n_steps):
             self.make_note(start + step * step_n)
 
-    def make_notebook(self, dst_dir):
-        # Copy templates
-        template_src = os.path.join(self.script_dir, "templates")
-        template_dst = os.path.join(dst_dir, "templates")
-        os.makedirs(os.path.join(dst_dir, "templates"), exist_ok=True)
-        for template in os.listdir(template_src):
-            if not os.path.exists(os.path.join(template_dst, template)):
-                shutil.copy(
-                    os.path.join(template_src, template),
-                    os.path.join(template_dst, template),
-                )
-        # Create config
-        if not os.path.exists(os.path.join(dst_dir, "config.json")):
-            temp_config = self.read_json(os.path.join(template_src, "config.json"))
-            self._write_json(os.path.join(dst_dir, "config.json"), temp_config)
+    def make_template_item(self, src_path, dst_path, overwrite=False):
+        if not os.path.exists(dst_path) or overwrite:
+            with open(dst_path, "wb") as f:
+                raw = pkg_resources.resource_string(__name__, src_path)
+                f.write(raw)
 
-        # Basic render-time changes file
-        os.makedirs(os.path.join(dst_dir, "working"), exist_ok=True)
-        temp = os.path.join(dst_dir, "working", "render_changes.json")
-        if not os.path.exists(temp):
-            shutil.copy(os.path.join(template_dst, "render_changes.json"), temp)
-        temp = os.path.join(dst_dir, "working", "corrections.json")
-        if not os.path.exists(temp):
-            shutil.copy(os.path.join(template_dst, "corrections.json"), temp)
+    def make_notebook(self, dst_dir):
+        for resource_dir in {self.resource_map[x] for x in self.resource_map}:
+            if resource_dir:
+                os.makedirs(os.path.join(dst_dir, resource_dir), exist_ok=True)
+        for template in self.resource_map:
+            src_path = os.path.join(self.template_src, template)
+            dst_path = os.path.join(dst_dir, self.resource_map[template], template)
+            self.make_template_item(src_path, dst_path, overwrite=False)
 
     def _format_date(self, target_date):
         """Formats a date into useful predefined formats."""
@@ -168,7 +186,7 @@ class notebook:
 
     def render_notebook(self):
         "Render the entire notebook to a HTML file."
-        output = [self.read(path) for path in self.note_list()]
+        output = [self.read(path) for path in self.note_list() if self.is_empty(path)]
         self._render_markdown_to_file(output, self.config["notebook_name"])
 
     def render_project(self, project_name):
@@ -183,6 +201,8 @@ class notebook:
         # Extract the project from all notes:
         markdown_extract = []
         for n, path in enumerate(self.note_list()):
+            if self.is_empty(path):
+                continue
             collect = False
             temp = re.split("\ufeff|\n", self.read(path))
             lines_extract = []
@@ -268,6 +288,7 @@ class notebook:
 
     def corrections(self):
         "Applies regex replacements to notes."
+        # TODO: Repeadedly call until it's the same.
         replacements = self.read_json(self._working_path("corrections.json"))
         for note_file in self.note_list():
             write = False
@@ -304,61 +325,3 @@ def calc_sha256(path, buffer_size=65536):
 def calc_md5(path, buffer_size=65536):
     "Calculates the MD5 of a file."
     return hash_file(path, hashlib.md5(), buffer_size)
-
-
-if __name__ == "__main__":
-    import argparse
-
-    parser = argparse.ArgumentParser(description="Markdown notebook manager.")
-    parser.add_argument("notedir", type=str, help="Notebook directory path.")
-    parser.add_argument(
-        "-m", "--make_note", help="Make a note for today.", action="store_true"
-    )
-    parser.add_argument("-d", "--make_day", help="Make notes for a specific day.")
-    parser.add_argument(
-        "-s", "--make_series", help="Make notes for n days in the future.", type=int
-    )
-    parser.add_argument(
-        "-r", "--render_all", help="Render all notes.", action="store_true"
-    )
-    parser.add_argument(
-        "-c",
-        "--clean_headings",
-        help="Clean headings in the notes.",
-        action="store_true",
-    )
-    parser.add_argument(
-        "-i",
-        "--initialise_notebook",
-        help="Create a blank notebook in the target directory.",
-        action="store_true",
-    )
-    parser.add_argument(
-        "-e",
-        "--extract_project",
-        help="Extracts all entries for a single project and renders them to HTML.",
-    )
-    parser.add_argument(
-        "-a",
-        "--extract_all",
-        help="Extracts all entries for a each project and renders them to HTML.",
-        action="store_true",
-    )
-
-    args = parser.parse_args()
-    book = notebook(config_path=args.notedir, make_notebook=args.initialise_notebook)
-
-    if args.clean_headings:
-        book.clean()
-    if args.render_all:
-        book.render_notebook()
-    if args.make_note:
-        book.make_note()
-    if args.make_day is not None:
-        book.make_note_str(args.make_day)
-    if args.make_series is not None:
-        book.make_note_series(args.make_series)
-    if args.extract_project is not None:
-        book.render_project(args.extract_project)
-    if args.extract_all:
-        book.render_all_projects()
