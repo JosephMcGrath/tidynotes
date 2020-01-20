@@ -27,6 +27,23 @@ class TidynoteInit(unittest.TestCase):
         for path in paths:
             self.assertTrue(os.path.exists(os.path.join(self.test_dir, path)))
 
+    def test_notebook_creation_cli_explicit(self):
+        cmd = f'tidynotes -notedir "{self.test_dir}" -i'
+        os.system(cmd)
+        self.assertTrue(os.path.exists(os.path.join(self.test_dir, "config.json")))
+
+    def test_notebook_creation_cli_implicit(self):
+        cmd = f'tidynotes -notedir "{self.test_dir}"'
+        os.system(cmd)
+        self.assertTrue(os.path.exists(os.path.join(self.test_dir, "config.json")))
+
+    def test_notebook_creation_cli_implicit_blocked(self):
+        with open(os.path.join(self.test_dir, "temp.txt"), "w") as f:
+            f.write(" ")
+        cmd = f'tidynotes -notedir "{self.test_dir}"'
+        os.system(cmd)
+        self.assertFalse(os.path.exists(os.path.join(self.test_dir, "config.json")))
+
 
 if __name__ == "__main__":
     unittest.main()
