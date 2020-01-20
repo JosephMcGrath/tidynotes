@@ -14,15 +14,7 @@ class TidynoteInit(unittest.TestCase):
     def test_notebook_creation_explicit(self):
         book = Tidybook(self.test_dir, initialise=True)
 
-        resource_map = {
-            "config.json": "",
-            "corrections.json": "working",
-            "note.css": "templates",
-            "note.md": "templates",
-            "page.html": "templates",
-            "render_changes.json": "working",
-        }
-        # resource_map = book.resource_map
+        resource_map = book.resource_map
         paths = [os.path.join(resource_map[x], x) for x in resource_map]
         for path in paths:
             self.assertTrue(os.path.exists(os.path.join(self.test_dir, path)))
@@ -30,15 +22,7 @@ class TidynoteInit(unittest.TestCase):
     def test_notebook_creation_implicit(self):
         book = Tidybook(self.test_dir, initialise=False)
 
-        resource_map = {
-            "config.json": "",
-            "corrections.json": "working",
-            "note.css": "templates",
-            "note.md": "templates",
-            "page.html": "templates",
-            "render_changes.json": "working",
-        }
-        # resource_map = book.resource_map
+        resource_map = book.resource_map
         paths = [os.path.join(resource_map[x], x) for x in resource_map]
         for path in paths:
             self.assertTrue(os.path.exists(os.path.join(self.test_dir, path)))
