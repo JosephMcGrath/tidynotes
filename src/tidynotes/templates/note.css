@@ -49,7 +49,7 @@ code[class="path"], code[class="sha256"], code[class="sha1"], code[class="md5"] 
   background-color: hsl(0, var(--code-saturation), var(--code-lightness));
 }
 
-code[class="log"] {
+code[class="log"], code[class="error"] {
   background-color: hsl(260, var(--code-saturation), var(--code-lightness));
 }
 
@@ -62,7 +62,7 @@ code[class="equation"] {
   color: #ffffff;
 }
 
-code[class="batch"] {
+code[class="batch"], code[class="bat"] {
   background-color: #0b0c52;
   color: #bebfc6;
 }
