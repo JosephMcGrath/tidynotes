@@ -1,0 +1,10 @@
+[MESSAGES CONTROL]
+max-attributes=10
+max-args=8
+disable=
+    # Personally I find this one less clear.
+    R1705,
+    # Formatting handled by Black
+    C0330,
+    # I occasionally use methods to hold related functionality (my be worth re-visiting)
+    R0201,

@@ -1,12 +1,19 @@
+"""
+Command-line arguments to drive the notebook management tools.
+"""
+
+import argparse
 import os
 
-from tidynotes import notebook
+from .notebook import Tidybook
 
-# # TODO: These could probably be entry points too?
+# TODO: These could probably be entry points too?
 
 
 def main():
-    import argparse
+    """
+    Run the tool via command-line tools.
+    """
 
     parser = argparse.ArgumentParser(description="Markdown notebook manager.")
     parser.add_argument(
@@ -62,9 +69,7 @@ def main():
         print("Use the '-i' argument to force initialisation in a non-empty folder.")
         return
 
-    book = notebook.Tidybook(
-        config_path=args.notedir, initialise=args.initialise_notebook
-    )
+    book = Tidybook(config_path=args.notedir, initialise=args.initialise_notebook)
     if args.clean_headings:
         book.clean()
     if args.render_all:

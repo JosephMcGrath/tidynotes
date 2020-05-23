@@ -1,15 +1,25 @@
-import os
-import jinja2
-import datetime
-import markdown
-import re
-import json
-import hashlib
+"""
+Script to support generation / management of a markdown notebook.
+"""
+
 import collections
+import datetime
+import hashlib
+import json
+import os
+import re
+
+import jinja2
 import pkg_resources
+
+import markdown
 
 
 class Tidybook:
+    """
+    Over-arching object to represent the notebook.
+    """
+
     resource_map = {
         "config.json": "",
         "corrections.json": "working",
@@ -52,15 +62,15 @@ class Tidybook:
         if dst_dir != "":
             if not os.path.exists(dst_dir):
                 os.makedirs(dst_dir)
-        with open(file_path, mode, encoding="utf-8") as f:
-            f.write(content)
+        with open(file_path, mode, encoding="utf-8") as file_out:
+            file_out.write(content)
 
     def _write_json(self, file_path: str, content):
         self._write(file_path, json.dumps(content, indent=2))
 
-    def read(self, file_path: str):
-        with open(file_path, "r", encoding="utf-8") as f:
-            text = f.read()
+    def _read(self, file_path: str):
+        with open(file_path, "r", encoding="utf-8") as file_in:
+            text = file_in.read()
         return text
 
     def is_empty(self, file_path: str, threshold: int = 0) -> bool:
@@ -73,14 +83,19 @@ class Tidybook:
         if threshold < 0:
             return True
         non_empty = [
-            x for x in re.findall("(?i)\n[^#][\w]+", self.read(file_path)) if x.strip()
+            x
+            for x in re.findall(r"(?i)\n[^#][\w]+", self._read(file_path))
+            if x.strip()
         ]
         return len(non_empty) > threshold
 
     def read_json(self, file_path: str):
+        """
+        Read and decode a JSON file.
+        """
         if os.path.exists(file_path):
-            with open(file_path, encoding="utf-8") as f:
-                return json.load(f, object_pairs_hook=collections.OrderedDict)
+            with open(file_path, encoding="utf-8") as file_in:
+                return json.load(file_in, object_pairs_hook=collections.OrderedDict)
         else:
             return collections.OrderedDict()
 
@@ -98,23 +113,26 @@ class Tidybook:
         self.make_note(self._parse_date(datestr), force)
 
     def make_note_series(
-        self,
-        n_steps,
-        start=datetime.datetime.today(),
-        step=datetime.timedelta(days=1),
-        force=False,
+        self, n_steps, start=datetime.datetime.today(), step=datetime.timedelta(days=1)
     ):
         "Generates and writes a series of notes."
         for step_n in range(n_steps):
             self.make_note(start + step * step_n)
 
     def make_template_item(self, src_path, dst_path, overwrite=False):
+        """
+        Pulls a named file out of the package and writes it to the destination.
+        """
         if not os.path.exists(dst_path) or overwrite:
-            with open(dst_path, "wb") as f:
+            with open(dst_path, "wb") as file_out:
                 raw = pkg_resources.resource_string(__name__, src_path)
-                f.write(raw)
+                file_out.write(raw)
 
     def make_notebook(self, dst_dir):
+        """
+        Generates a blank notebook in the destination folder, populated with all
+        required files.
+        """
         for resource_dir in {self.resource_map[x] for x in self.resource_map}:
             if resource_dir:
                 os.makedirs(os.path.join(dst_dir, resource_dir), exist_ok=True)
@@ -130,10 +148,10 @@ class Tidybook:
 
     def _parse_date(self, input_date):
         format_list = self.config["date_formats"]
-        for format in self.config["date_formats"]:
+        for date_format in self.config["date_formats"]:
             try:
-                return datetime.datetime.strptime(input_date, format_list[format])
-            except:
+                return datetime.datetime.strptime(input_date, format_list[date_format])
+            except ValueError:
                 pass
 
     def note_list(self):
@@ -152,10 +170,10 @@ class Tidybook:
 
     def _render_markdown(self, markdown_text) -> str:
         "Render provided markdown to a HTML string."
-        md = markdown.Markdown(
+        render_engine = markdown.Markdown(
             extensions=["fenced_code", "tables", "sane_lists", "admonition"]
         )
-        return md.convert(markdown_text)
+        return render_engine.convert(markdown_text)
 
     def _preprocess_markdown(self, markdown_text):
         lines = markdown_text.split("\n")
@@ -166,8 +184,8 @@ class Tidybook:
         # Render-time replacements
         replacement_path = self._working_path("render_changes.json")
         replacements = self.read_json(replacement_path)
-        for x in replacements:
-            output = re.sub(x, replacements[x], output)
+        for src_pattern, dst_pattern in replacements.items():
+            output = re.sub(src_pattern, dst_pattern, output)
         return output
 
     def _render_markdown_to_file(self, markdown_list, output_name):
@@ -186,7 +204,7 @@ class Tidybook:
 
     def render_notebook(self):
         "Render the entire notebook to a HTML file."
-        output = [self.read(path) for path in self.note_list() if self.is_empty(path)]
+        output = [self._read(path) for path in self.note_list() if self.is_empty(path)]
         self._render_markdown_to_file(output, self.config["notebook_name"])
 
     def render_project(self, project_name):
@@ -200,11 +218,11 @@ class Tidybook:
         project_name = re.sub("(^#+)", "", title_name).strip()
         # Extract the project from all notes:
         markdown_extract = []
-        for n, path in enumerate(self.note_list()):
+        for path in self.note_list():
             if self.is_empty(path):
                 continue
             collect = False
-            temp = re.split("\ufeff|\n", self.read(path))
+            temp = re.split("\ufeff|\n", self._read(path))
             lines_extract = []
             title = ""
             for line in temp:
@@ -216,17 +234,17 @@ class Tidybook:
                     collect = False
                 if collect:
                     lines_extract.append(line)
-            if len(lines_extract):
+            if len(lines_extract) > 0:
                 lines_extract.insert(0, title)
                 markdown_extract.append("\n".join(lines_extract))
         # Render to HTML
-        if len(markdown_extract):
+        if len(markdown_extract) > 0:
             self._render_markdown_to_file(markdown_extract, project_name)
 
     def render_all_projects(self):
         "Renders a HTML output for all projects."
         temp = self._build_heading_list(self._working_path("project_names.json"), 2)
-        projects = set([temp[x] for x in temp])
+        projects = {temp[x] for x in temp}
         for project in projects:
             self.render_project(project)
 
@@ -248,14 +266,14 @@ class Tidybook:
         projects = self.read_json(title_lookup_path)
         pattern = re.compile("^#{level} ".format(level="{" + str(level) + "}"))
         for note_file in self.note_list():
-            lines = self.read(note_file).split("\n")
+            lines = self._read(note_file).split("\n")
             for project in [x for x in lines if re.search(pattern, x)]:
                 project = project.strip()
                 if project not in projects:
                     projects[project] = project
         output = collections.OrderedDict()
-        for x in sorted(projects):
-            output[x] = projects[x]
+        for project in sorted(projects):
+            output[project] = projects[project]
         self._write_json(title_lookup_path, output)
         return output
 
@@ -263,16 +281,16 @@ class Tidybook:
         "Uses a provided lookup list to replace titles in the notebook."
         title_replace = {x for x in title_lookup_list if x != title_lookup_list[x]}
         if len(title_replace) == 0:
-            return None
+            return
 
         for note_file in self.note_list():
             write = False
-            lines = self.read(note_file).split("\n")
-            for n, x in enumerate(lines):
-                x = x.strip()
-                if x in title_replace:
+            lines = self._read(note_file).split("\n")
+            for line_no, line in enumerate(lines):
+                line = line.strip()
+                if line in title_replace:
                     write = True
-                    lines[n] = title_lookup_list[x] + "\n"
+                    lines[line_no] = title_lookup_list[line] + "\n"
             if write:
                 self._write(note_file, "\n".join(lines))
 
@@ -291,9 +309,8 @@ class Tidybook:
         # TODO: Repeadedly call until it's the same.
         replacements = self.read_json(self._working_path("corrections.json"))
         for note_file in self.note_list():
-            write = False
-            raw = self.read(note_file)
-            output = self.read(note_file)
+            raw = self._read(note_file)
+            output = self._read(note_file)
             for replacement in replacements:
                 if re.search(replacement, output):
                     output = re.sub(replacement, replacements[replacement], output)
@@ -301,6 +318,7 @@ class Tidybook:
                 self._write(note_file, output)
 
     def clean(self):
+        "Carries out all note-cleaning operations."
         self.clean_project_list()
         self.clean_task_list()
         self.corrections()
@@ -308,9 +326,9 @@ class Tidybook:
 
 def hash_file(path, algorithm, buffer_size=65536):
     "Generic function to calculate the hash of a file."
-    with open(path, "rb") as f:
+    with open(path, "rb") as file_in:
         while True:
-            data = f.read(buffer_size)
+            data = file_in.read(buffer_size)
             if not data:
                 break
             algorithm.update(data)
