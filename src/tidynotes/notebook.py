@@ -20,6 +20,7 @@ class Tidybook:
     Over-arching object to represent the notebook.
     """
 
+    # region Class variables
     resource_map = {
         "config.json": "",
         "corrections.json": "working",
@@ -29,6 +30,7 @@ class Tidybook:
         "render_changes.json": "working",
     }
     template_src = "templates"
+    # endregion
 
     def __init__(self, config_path, initialise=None):
         self.script_dir = os.path.dirname(os.path.realpath(__file__))
@@ -39,6 +41,7 @@ class Tidybook:
         _ = jinja2.FileSystemLoader(self.template_path)
         self.env = jinja2.Environment(loader=_)
 
+    # region File IO
     def _read_config(self, config_path):
         assert os.path.exists(config_path)
         if os.path.isfile(config_path):
@@ -49,7 +52,7 @@ class Tidybook:
                 self.make_notebook(config_path)
             self.root_path = config_path
             self.config_path = os.path.join(config_path, "config.json")
-        self.config = self.read_json(self.config_path)
+        self.config = self._read_json(self.config_path)
         self.note_path = os.path.join(self.root_path, self.config["note_path"])
         self.template_path = os.path.join(self.root_path, self.config["template_path"])
 
@@ -73,23 +76,7 @@ class Tidybook:
             text = file_in.read()
         return text
 
-    def is_empty(self, file_path: str, threshold: int = 0) -> bool:
-        """
-        Checks if a markdown note has any lines that are not a title or blank.
-        A threshold of blank lines can be passed in (a negative threshold will
-        always return True).
-        """
-        # TODO: Threshold as a part of the config file?
-        if threshold < 0:
-            return True
-        non_empty = [
-            x
-            for x in re.findall(r"(?i)\n[^#][\w]+", self._read(file_path))
-            if x.strip()
-        ]
-        return len(non_empty) > threshold
-
-    def read_json(self, file_path: str):
+    def _read_json(self, file_path: str):
         """
         Read and decode a JSON file.
         """
@@ -99,6 +86,9 @@ class Tidybook:
         else:
             return collections.OrderedDict()
 
+    # endregion
+
+    # region Generation
     def make_note(self, date=datetime.datetime.today(), force=False):
         "Generates and writes a note for the specified date."
         date_f = self._format_date(date)
@@ -140,6 +130,26 @@ class Tidybook:
             src_path = os.path.join(self.template_src, template)
             dst_path = os.path.join(dst_dir, self.resource_map[template], template)
             self.make_template_item(src_path, dst_path, overwrite=False)
+
+    # endregion
+
+    # region Parsing
+
+    def is_empty(self, file_path: str, threshold: int = 0) -> bool:
+        """
+        Checks if a markdown note has any lines that are not a title or blank.
+        A threshold of blank lines can be passed in (a negative threshold will
+        always return True).
+        """
+        # TODO: Threshold as a part of the config file?
+        if threshold < 0:
+            return True
+        non_empty = [
+            x
+            for x in re.findall(r"(?i)\n[^#][\w]+", self._read(file_path))
+            if x.strip()
+        ]
+        return len(non_empty) > threshold
 
     def _format_date(self, target_date):
         """Formats a date into useful predefined formats."""
@@ -183,11 +193,14 @@ class Tidybook:
 
         # Render-time replacements
         replacement_path = self._working_path("render_changes.json")
-        replacements = self.read_json(replacement_path)
+        replacements = self._read_json(replacement_path)
         for src_pattern, dst_pattern in replacements.items():
             output = re.sub(src_pattern, dst_pattern, output)
         return output
 
+    # endregion
+
+    # region Rendering
     def _render_markdown_to_file(self, markdown_list, output_name):
         "Writes a list of markdown entries to HTML."
         output = [
@@ -211,7 +224,7 @@ class Tidybook:
         "Extracts all entries for a project and writes them to a HTML file."
         # TODO: Generalise this method for tasks.
         # Check if the project name's in the replacement list.
-        lookup_table = self.read_json(self._working_path("project_names.json"))
+        lookup_table = self._read_json(self._working_path("project_names.json"))
         title_name = "## " + re.sub("(^#+)", "", project_name).strip()
         if title_name in lookup_table:
             title_name = lookup_table[title_name]
@@ -261,9 +274,12 @@ class Tidybook:
         ]
         self._write(dst_path, ",".join(output) + "\n", "a")
 
+    # endregion
+
+    # region Cleanup
     def _build_heading_list(self, title_lookup_path, level=2):
         "Builds a dictionary of all headings in the notebook."
-        projects = self.read_json(title_lookup_path)
+        projects = self._read_json(title_lookup_path)
         pattern = re.compile("^#{level} ".format(level="{" + str(level) + "}"))
         for note_file in self.note_list():
             lines = self._read(note_file).split("\n")
@@ -307,7 +323,7 @@ class Tidybook:
     def corrections(self):
         "Applies regex replacements to notes."
         # TODO: Repeadedly call until it's the same.
-        replacements = self.read_json(self._working_path("corrections.json"))
+        replacements = self._read_json(self._working_path("corrections.json"))
         for note_file in self.note_list():
             raw = self._read(note_file)
             output = self._read(note_file)
@@ -323,7 +339,10 @@ class Tidybook:
         self.clean_task_list()
         self.corrections()
 
+    # endregion
 
+
+# region Supporting Function
 def hash_file(path, algorithm, buffer_size=65536):
     "Generic function to calculate the hash of a file."
     with open(path, "rb") as file_in:
@@ -343,3 +362,6 @@ def calc_sha256(path, buffer_size=65536):
 def calc_md5(path, buffer_size=65536):
     "Calculates the MD5 of a file."
     return hash_file(path, hashlib.md5(), buffer_size)
+
+
+# endregion
