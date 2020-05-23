@@ -6,6 +6,7 @@ import collections
 import datetime
 import hashlib
 import json
+import logging
 import os
 import re
 
@@ -30,16 +31,29 @@ class Tidybook:
         "render_changes.json": "working",
     }
     template_src = "templates"
+    log_name = "Tidynotes"
     # endregion
 
     def __init__(self, config_path, initialise=None):
-        self.script_dir = os.path.dirname(os.path.realpath(__file__))
-        self.initialise = initialise
+        logger = self._make_logger("Init")
+        logger.debug("Setting up notebook.")
         if initialise:
+            logger.debug("Creating notebook in %s.", config_path)
             self.make_notebook(config_path)
         self._read_config(config_path)
         _ = jinja2.FileSystemLoader(self.template_path)
         self.env = jinja2.Environment(loader=_)
+        logging.debug("Finished setting up notebook.")
+    
+    # region Logging
+    def _make_logger(self, sub_log = None) -> logging.Logger:
+        "Get the logger for the notebook, with an optional sub-log name."
+        if isinstance(sub_log, str):
+            log_name = f"{self.log_name}.{sub_log}"
+        else:
+            log_name = self.log_name
+        return logging.getLogger(log_name)
+    # endregion
 
     # region File IO
     def _read_config(self, config_path):
