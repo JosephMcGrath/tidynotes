@@ -2,6 +2,8 @@
 Script to support generation / management of a markdown notebook.
 """
 
+# TODO : Set up logging directory.
+
 import collections
 import datetime
 import hashlib
@@ -44,50 +46,66 @@ class Tidybook:
         _ = jinja2.FileSystemLoader(self.template_path)
         self.env = jinja2.Environment(loader=_)
         logging.debug("Finished setting up notebook.")
-    
+
     # region Logging
-    def _make_logger(self, sub_log = None) -> logging.Logger:
+    def _make_logger(self, sub_log=None) -> logging.Logger:
         "Get the logger for the notebook, with an optional sub-log name."
         if isinstance(sub_log, str):
             log_name = f"{self.log_name}.{sub_log}"
         else:
             log_name = self.log_name
         return logging.getLogger(log_name)
+
     # endregion
 
     # region File IO
     def _read_config(self, config_path):
+        logger = self._make_logger("IO")
+        logger.debug("Reading config from %s.", config_path)
         assert os.path.exists(config_path)
         if os.path.isfile(config_path):
+            logger.debug("Config path is a file.")
             self.root_path = os.path.split(config_path)[0]
             self.config_path = config_path
         elif os.path.isdir(config_path):
+            logger.debug("Config path is a directory.")
             if len(os.listdir(config_path)) == 0:
+                logger.debug("Empty directory, creating notebook.")
                 self.make_notebook(config_path)
             self.root_path = config_path
             self.config_path = os.path.join(config_path, "config.json")
+        logger.debug("Reading config from %s.", self.config_path)
         self.config = self._read_json(self.config_path)
         self.note_path = os.path.join(self.root_path, self.config["note_path"])
+        logger.debug("Note path is %s.", self.note_path)
         self.template_path = os.path.join(self.root_path, self.config["template_path"])
+        logger.debug("Template path is %s.", self.template_path)
+        logging.debug("Finished reading config.")
 
     def _working_path(self, file_name):
         return os.path.join(self.root_path, self.config["working_path"], file_name)
 
     def _write(self, file_path: str, content: str, mode: str = "w"):
         "Writes a string to a file."
+        logger = self._make_logger("IO")
+        logger.debug("Writing text to %s (mode = %s).", file_path, mode)
         dst_dir = os.path.split(file_path)[0]
         if dst_dir != "":
             if not os.path.exists(dst_dir):
                 os.makedirs(dst_dir)
         with open(file_path, mode, encoding="utf-8") as file_out:
             file_out.write(content)
+        logger.debug("Finished writing file.")
 
     def _write_json(self, file_path: str, content):
         self._write(file_path, json.dumps(content, indent=2))
 
     def _read(self, file_path: str):
+        logger = self._make_logger("IO")
+        logger.debug("Reading text from %s.", file_path)
         with open(file_path, "r", encoding="utf-8") as file_in:
             text = file_in.read()
+        logger.debug("Finished reading text.")
         return text
 
     def _read_json(self, file_path: str):
@@ -105,12 +123,17 @@ class Tidybook:
     # region Generation
     def make_note(self, date=datetime.datetime.today(), force=False):
         "Generates and writes a note for the specified date."
+        logger = self._make_logger("Generation")
+        logger.debug("Generating a note for %s.", date)
         date_f = self._format_date(date)
         dst_path = os.path.join(self.note_path, date_f["path"], date_f["file"])
         if force or not os.path.exists(dst_path):
             template = self.env.get_template("note.md")
             output = template.render(dates=date_f)
             self._write(dst_path, output)
+        else:
+            logger.debug("Note already exists - skipping.")
+        logger.debug("Finished writing note.")
 
     def make_note_str(self, datestr, force=False):
         "Generates and writes a note for a date specified as a string."
@@ -137,25 +160,33 @@ class Tidybook:
         Generates a blank notebook in the destination folder, populated with all
         required files.
         """
+        logger = self._make_logger("Generation")
+        logger.info("Creating blank notebook in folder: %s.", dst_dir)
+        logger.debug("Creating resource folders.")
+        # TODO : Just use dict.items?
         for resource_dir in {self.resource_map[x] for x in self.resource_map}:
             if resource_dir:
+                logger.debug("Creating folder: %s", resource_dir)
                 os.makedirs(os.path.join(dst_dir, resource_dir), exist_ok=True)
+        logger.debug("Creating notebook resources.")
         for template in self.resource_map:
+            logger.debug("Creating %s", template)
             src_path = os.path.join(self.template_src, template)
             dst_path = os.path.join(dst_dir, self.resource_map[template], template)
             self.make_template_item(src_path, dst_path, overwrite=False)
+        logger.info("Finished creating blank notebook.")
 
     # endregion
 
     # region Parsing
-
     def is_empty(self, file_path: str, threshold: int = 0) -> bool:
         """
         Checks if a markdown note has any lines that are not a title or blank.
         A threshold of blank lines can be passed in (a negative threshold will
         always return True).
         """
-        # TODO: Threshold as a part of the config file?
+        # TODO : Threshold as a part of the config file?
+        # TODO : Pre-compile regex.
         if threshold < 0:
             return True
         non_empty = [
