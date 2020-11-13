@@ -215,16 +215,23 @@ class Tidybook:
 
         Notes are sorted by their file names (not paths).
         """
+        logger = self._make_logger("Parsing")
         files = [
             os.path.join(dp, f)
             for dp, _, filenames in os.walk(self.note_path)
             for f in filenames
             if os.path.splitext(f)[1].lower() == ".md"
         ]
+        logger.debug("Found %s notes.", len(files))
         return sorted(files, key=lambda x: os.path.split(x)[-1])
 
+    # endregion
+
+    # region Rendering
     def _render_markdown(self, markdown_text) -> str:
         "Render provided markdown to a HTML string."
+        logger = self._make_logger("Rendering")
+        logger.debug("Rendering markdown (input length: %s)", len(markdown_text))
         render_engine = markdown.Markdown(
             extensions=["fenced_code", "tables", "sane_lists", "admonition"]
         )
@@ -243,9 +250,6 @@ class Tidybook:
             output = re.sub(src_pattern, dst_pattern, output)
         return output
 
-    # endregion
-
-    # region Rendering
     def _render_markdown_to_file(self, markdown_list, output_name):
         "Writes a list of markdown entries to HTML."
         output = [
@@ -262,13 +266,18 @@ class Tidybook:
 
     def render_notebook(self):
         "Render the entire notebook to a HTML file."
+        logger = self._make_logger("Rendering")
+        logger.info("Rendering markdown notebook")
         output = [self._read(path) for path in self.note_list() if self.is_empty(path)]
         self._render_markdown_to_file(output, self.config["notebook_name"])
+        logger.info("Rendering complete")
 
     def render_project(self, project_name):
         "Extracts all entries for a project and writes them to a HTML file."
         # TODO: Generalise this method for tasks.
         # Check if the project name's in the replacement list.
+        logger = self._make_logger("Rendering")
+        logger.info("Rendering project: %s", project_name)
         lookup_table = self._read_json(self._working_path("project_names.json"))
         title_name = "## " + re.sub("(^#+)", "", project_name).strip()
         if title_name in lookup_table:
@@ -295,19 +304,27 @@ class Tidybook:
             if len(lines_extract) > 0:
                 lines_extract.insert(0, title)
                 markdown_extract.append("\n".join(lines_extract))
+        logger.debug("Parts extracted from %s logs.", len(markdown_extract))
         # Render to HTML
         if len(markdown_extract) > 0:
             self._render_markdown_to_file(markdown_extract, project_name)
+        logger.info("Finished rendering project.")
 
     def render_all_projects(self):
         "Renders a HTML output for all projects."
+        logger = self._make_logger("Rendering")
+        logger.info("Rendering all projects.")
         temp = self._build_heading_list(self._working_path("project_names.json"), 2)
+        logger.debug("%s projects found.", len(temp))
         projects = {temp[x] for x in temp}
         for project in projects:
             self.render_project(project)
+        logger.info("Finshed rendering all projects.")
 
     def _log_file_info(self, file_path):
         "Logs information about a file (called after rendering an output)."
+        logger = self._make_logger()
+        logger.debug("Collating information on %s.", file_path)
         dst_path = self._working_path("hash_log.csv")
         file_info = os.stat(file_path)
         output = [
@@ -318,6 +335,7 @@ class Tidybook:
             str(file_info.st_size),
         ]
         self._write(dst_path, ",".join(output) + "\n", "a")
+        logger.debug("SHA256 was %s.", output[2])
 
     # endregion
 
@@ -376,6 +394,8 @@ class Tidybook:
                 if re.search(replacement, output):
                     output = re.sub(replacement, replacements[replacement], output)
             if raw != output:
+                logger = self._make_logger("Cleaning")
+                logger.debug("Automatic changes applied to %s.", note_file)
                 self._write(note_file, output)
 
     def clean(self):
