@@ -16,6 +16,7 @@ import yaml
 
 
 class MarkdownPart:
+    # TODO : Define levels
     """
     A part of a markdown document.
 
@@ -25,7 +26,7 @@ class MarkdownPart:
     * body - the text of the section.
     * parts - sub-sections (also MarkdownParts) for any sub-headings.
     * metadata - any metadata for the object (stored in a YAML header).
-    * level - 
+    * level -
 
     And one optional attribute:
 
@@ -142,17 +143,26 @@ class MarkdownPart:
         self, pattern: str, replacement: str, regex: bool = True
     ) -> None:
         """
-        Replace any text in the title or body patching `pattern` with `replacement`.
+        Replace any text in the body patching `pattern` with `replacement`.
         If `regex` is true then re.sub is used.
         """
         if regex:
-            self.title = re.sub(pattern, replacement, self.title)
             self.body = re.sub(pattern, replacement, self.body)
         else:
-            self.title = self.title.replace(pattern, replacement)
             self.body = self.body.replace(pattern, replacement)
         for part in self.parts:
             part.make_replacement(pattern, replacement, regex=regex)
+
+    def replace_title(
+        self, replacements: Dict[str, str], level: Optional[int] = None
+    ) -> None:
+        if level is None or level == self.level:
+            self.title = replacements.get(self.title, self.title)
+        if level == self.level:
+            return
+
+        for part in self.parts:
+            part.replace_title(replacements=replacements, level=level)
 
     def get_links(self) -> List[str]:
         links = re.findall(r"\[\[([^\]]*)\]\]", self.body)

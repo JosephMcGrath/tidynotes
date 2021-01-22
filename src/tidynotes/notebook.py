@@ -3,13 +3,16 @@ import glob
 import json
 import logging
 import os
-from typing import Dict, List, Union, Any
+import re
+from typing import Any, Dict, List, Tuple, Union
 
 import jinja2
 import pkg_resources
 
 from .mardown_document import MarkdownPart
 
+# TODO : Logging
+# TODO : Regex note search
 
 class Notebook:
     log_name = "Tidynotes"
@@ -113,7 +116,8 @@ class Notebook:
 
     def clean(self) -> None:
         """General cleanup operations on the notebook."""
-        self.notes = self.read_notes()
+        self.update_projects_and_tasks()
+        self.text_corrections()
         for this_note in self.notes:
             this_note.to_file(this_note.meta[".file"]["path"])
 
@@ -127,7 +131,38 @@ class Notebook:
                 output.parts[-1].title = this_note.title
         return output
 
-    def make_part_list(self) -> Dict[str, List[str]]:
+    def update_projects_and_tasks(self):
+        """
+        Build a list of projects/tasks and replace existing ones based on a mapping.
+
+        The mappings are stored in JSON files called "projects" and "tasks".
+        """
+        projects = read_json(self._working_path("projects.json"))
+        tasks = read_json(self._working_path("tasks.json"))
+
+        new_projects, new_tasks = self._make_part_list()
+        for this_project in new_projects:
+            if this_project not in projects:
+                projects[this_project] = this_project
+        for this_tasks in new_tasks:
+            if this_tasks not in tasks:
+                tasks[this_tasks] = this_tasks
+
+        for this_note in self.notes:
+            this_note.replace_title(projects, level=2)
+            this_note.replace_title(tasks, level=3)
+
+        write_json(projects, self._working_path("projects.json"))
+        write_json(tasks, self._working_path("tasks.json"))
+
+    def text_corrections(self):
+        """Apply each regex replacement pattern in corrections.json to all notes."""
+        corrections = read_json(self._working_path("corrections.json"))
+        for pattern, replacement in corrections.items():
+            for this_note in self.notes:
+                this_note.make_replacement(pattern, replacement)
+
+    def _make_part_list(self) -> Tuple[List[str], List[str]]:
         """Generate a list of projects and tasks in the notebook."""
         projects = set()
         tasks = set()
@@ -136,10 +171,10 @@ class Notebook:
             for this_project in this_note.parts:
                 tasks.update([x.title for x in this_project.parts])
 
-        return {"projects": sorted(list(projects)), "tasks": sorted(list(tasks))}
+        return (sorted(list(projects)), sorted(list(tasks)))
 
-    def _working_path(self, file_name):
-        return os.path.join(self.root_path, self.working_dir, file_name)
+    def _working_path(self, file_name) -> str:
+        return os.path.join(self.root_dir, self.working_dir, file_name)
 
 
 def write_json(data: Dict[str, Any], path: str) -> None:
@@ -148,5 +183,8 @@ def write_json(data: Dict[str, Any], path: str) -> None:
 
 
 def read_json(path: str) -> Dict[str, Any]:
-    with open(path, "r", encoding="utf-8") as f:
-        return json.load(data)
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as file:
+            return json.load(file)
+    else:
+        return {}
