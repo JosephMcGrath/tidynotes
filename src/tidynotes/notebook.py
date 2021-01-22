@@ -9,16 +9,17 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import jinja2
 import pkg_resources
 
+from .logs import LOG_NAME, setup_logging
 from .mardown_document import MarkdownPart
 
-# TODO : Logging
 # TODO : Regex note search
 # TODO : Config management
 # TODO : Dates in header as dates - YAML handles that
-
+# TODO : Fix __main__.py
+# TODO : Delete old code
+# TODO : Linting etc
 
 class Notebook:
-    log_name = "Tidynotes"
     template_dir = "templates"
     note_dir = "notes"
     working_dir = "working"
@@ -37,6 +38,8 @@ class Notebook:
 
     @classmethod
     def initialise(cls, notebook_dir: str) -> "Notebook":
+        logger = logging.getLogger(LOG_NAME)
+        logging.info("Creating notebook in [%s].", notebook_dir)
         template_list = {
             "config.json": "",
             "corrections.json": cls.working_dir,
@@ -95,9 +98,9 @@ class Notebook:
     def _make_logger(self, sub_log=None) -> logging.Logger:
         "Get the logger for the notebook, with an optional sub-log name."
         if isinstance(sub_log, str):
-            log_name = f"{self.log_name}.{sub_log}"
+            log_name = f"{LOG_NAME}.{sub_log}"
         else:
-            log_name = self.log_name
+            log_name = LOG_NAME
         return logging.getLogger(log_name)
 
     def _read_config(self) -> None:
@@ -120,6 +123,8 @@ class Notebook:
 
     def clean(self) -> None:
         """General cleanup operations on the notebook."""
+        logger = self._make_logger("Cleanup")
+        logger.info("Cleaning up all notes.")
         self.update_projects_and_tasks()
         self.text_corrections()
         for this_note in self.notes:
@@ -127,6 +132,7 @@ class Notebook:
             this_note.set_level(1)
             this_note.to_file(this_note.meta[".file"]["path"])
             this_note.set_level(temp_level)
+        logger.info("Finished cleaning notes.")
 
     def extract_project(self, pattern: str) -> List[MarkdownPart]:
         """Extract all entries for a project."""
@@ -184,16 +190,22 @@ class Notebook:
         return os.path.join(self.root_dir, self.working_dir, file_name)
 
     def render_full(self, dst_path: str) -> None:
+        logger = self._make_logger("Rendering")
+        logger.info("Rendering full notes to HTML at [%s].", dst_path)
         self._render(
             notes=self.notes, title=self.config["notebook_name"], dst_path=dst_path
         )
+        logger.info("Finished redering full notes.")
 
     def render_project(self, project_name: str, dst_path: str) -> None:
+        logger = self._make_logger("Rendering")
+        logger.info("Rendering project [%s] to HTML at [%s].", project_name, dst_path)
         self._render(
             notes=self.extract_project(project_name),
             title=project_name,
             dst_path=dst_path,
         )
+        logger.info("Finished redering project.")
 
     def _render(self, notes: List[MarkdownPart], title: str, dst_path: str) -> None:
         output = self.env.get_template("page.html").render(

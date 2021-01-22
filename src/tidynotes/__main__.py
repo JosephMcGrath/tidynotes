@@ -5,6 +5,7 @@ Command-line arguments to drive the notebook management tools.
 import argparse
 import os
 
+from .logs import setup_logging
 from .notebook import Tidybook
 
 # TODO: These could probably be entry points too?
@@ -68,6 +69,8 @@ def main():
     if len(os.listdir(args.notedir)) > 0 and not active:
         print("Use the '-i' argument to force initialisation in a non-empty folder.")
         return
+    
+    setup_logging(os.path.join(args.notedir, "TidyNotes.log"))
 
     book = Tidybook(config_path=args.notedir, initialise=args.initialise_notebook)
     if args.clean_headings:
