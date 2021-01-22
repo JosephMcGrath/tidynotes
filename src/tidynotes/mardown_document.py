@@ -3,9 +3,6 @@ General markdown document control.
 """
 
 import copy
-import datetime
-import glob
-import json
 import os
 import re
 from typing import Any, Dict, List, Optional
@@ -16,7 +13,6 @@ import yaml
 
 
 class MarkdownPart:
-    # TODO : Define levels
     # TODO : Support title-less documents (limited support)
     """
     A part of a markdown document.
@@ -27,7 +23,7 @@ class MarkdownPart:
     * body - the text of the section.
     * parts - sub-sections (also MarkdownParts) for any sub-headings.
     * metadata - any metadata for the object (stored in a YAML header).
-    * level -
+    * level - the markdown level of the section (with 0 being used for Pandoc PDFs).
 
     And one optional attribute:
 
@@ -89,7 +85,7 @@ class MarkdownPart:
         with open(path, "w", encoding=encoding) as file:
             file.write(output)
 
-    def combine(self, metadata=True) -> str:
+    def combine(self, metadata: bool = True) -> str:
         """
         Recombine the document and its parts into a markdown string.
         """
@@ -123,6 +119,9 @@ class MarkdownPart:
         self.parts = [x for x in self.parts if not re.match(pattern, x.title)]
 
     def copy(self) -> "MarkdownPart":
+        """
+        Create a copy of the document and all its parts.
+        """
         return copy.deepcopy(self)
 
     def extract_parts(self, pattern: str) -> List["MarkdownPart"]:
@@ -160,6 +159,9 @@ class MarkdownPart:
     def replace_title(
         self, replacements: Dict[str, str], level: Optional[int] = None
     ) -> None:
+        """
+        Replace the title of the document or its children using a dictionary map.
+        """
         if level is None or level == self.level:
             self.title = replacements.get(self.title, self.title)
         if level == self.level:
@@ -169,12 +171,18 @@ class MarkdownPart:
             part.replace_title(replacements=replacements, level=level)
 
     def get_links(self) -> List[str]:
+        """
+        Get any wikilink-style links from the document or its children.
+        """
         links = re.findall(r"\[\[([^\]]*)\]\]", self.body)
         for part in self.parts:
             links.extend(part.get_links())
         return links
 
     def get_images(self) -> List[str]:
+        """
+        Get any wikilink-style links from the document or its children.
+        """
         images = re.findall(r"\!\[([^\]]*)\]\(([^\)]*)\)", self.body)
         images = [x[1] for x in images]
         for part in self.parts:
@@ -198,21 +206,23 @@ class MarkdownPart:
     def _body_html(self) -> str:
         return self.renderer.convert(self.combine(metadata=False))
 
-    def _parse_raw(self, text: str) -> List["MarkdownPart"]:
+    def _parse_raw(self, text: str) -> None:
         """
         Parse raw markdown into its component parts.
         """
+        # TODO : Split this function up.
         heading_pattern = re.compile(r"^(#+) (.*)$")
         lines = text.split("\n")
         level = -1
         title = ""
+        line_no = -1
 
         # Parse metadata
         if lines[0].startswith("---"):
             meta_block = []
-            for n, line in enumerate(lines):
+            for line_no, line in enumerate(lines):
                 if line.startswith("---"):
-                    if n > 0:
+                    if line_no > 0:
                         break
                 else:
                     meta_block.append(line)
@@ -220,10 +230,10 @@ class MarkdownPart:
             if "title" in self.meta:
                 title = self.meta["title"]
                 level = 0
-            lines = lines[n + 1 :]
+                lines = lines[line_no + 1 :]
 
         # Get header
-        for n, line in enumerate(lines):
+        for line_no, line in enumerate(lines):
             if not re.match(heading_pattern, line):
                 continue
 
@@ -232,7 +242,7 @@ class MarkdownPart:
             if not title or first_heading == title:
                 title = first_heading
                 level = len(temp)
-            lines = lines[n + 1 :]
+            lines = lines[line_no + 1 :]
             break
         if not title:
             raise ValueError("Couldn't find a title in the document.")
@@ -241,16 +251,16 @@ class MarkdownPart:
 
         # Parse main text
         body: List[str] = []
-        for n, line in enumerate(lines):
+        for line_no, line in enumerate(lines):
             if re.match(child_pattern, line):
                 break
             body.append(line)
-        lines = lines[n:]
+        lines = lines[line_no:]
 
         # Parse children
         current_child: List[str] = []
         children: List[MarkdownPart] = []
-        for n, line in enumerate(lines):
+        for line_no, line in enumerate(lines):
             if not re.match(child_pattern, line):
                 current_child.append(line)
             else:

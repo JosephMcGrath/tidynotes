@@ -1,32 +1,43 @@
+"""
+Utility for managing an entire notebook.
+
+There should be no direct modification of markdown here, that's in MarkdownPart.
+"""
+
 import datetime
 import glob
 import json
 import logging
 import os
-import re
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import jinja2
 import pkg_resources
 
-from .logs import LOG_NAME, setup_logging
+from .logs import LOG_NAME
 from .mardown_document import MarkdownPart
 
 # TODO : Linting etc
 # TODO : Documentation template.
 # TODO : Update tests (test the CLI!)
+# TODO : Hash logs
 
 
 class Notebook:
+    """
+    A notebook of markdown documents, creates, cleans and renders the notebook to HTML.
+    """
+
     template_dir = "templates"
     note_dir = "notes"
     working_dir = "working"
     config_name = "config.json"
+    output_dir = "rendered"
 
     def __init__(self, notebook_dir: str) -> None:
         logger = self._make_logger()
         self.root_dir = os.path.abspath(notebook_dir)
-        self.config: Dict[str, Union[str, int]] = self._read_config()
+        self.config = self._read_config()
         if "notebook_name" not in self.config:
             self.set_config("notebook_name", "TidyNotes notebook.")
 
@@ -35,12 +46,15 @@ class Notebook:
 
         self.notes = self.read_notes()
 
-        logging.info("Set up notebook in %s.", self.root_dir)
+        logger.info("Set up notebook in %s.", self.root_dir)
 
     @classmethod
     def initialise(cls, notebook_dir: str) -> "Notebook":
+        """
+        Create a notebook in the provided directory.
+        """
         logger = logging.getLogger(LOG_NAME)
-        logging.info("Creating notebook in [%s].", notebook_dir)
+        logger.info("Creating notebook in [%s].", notebook_dir)
         template_list = {
             cls.config_name: "",
             "corrections.json": cls.working_dir,
@@ -55,7 +69,9 @@ class Notebook:
             dst_path = os.path.join(dst_dir, template)
 
             if os.path.exists(dst_path):
+                logger.warning('"%s" already exists.', dst_path)
                 continue
+            logger.debug('Creating "%s".', template)
 
             os.makedirs(dst_dir, exist_ok=True)
             src_path = os.path.join("templates", template)
@@ -93,13 +109,16 @@ class Notebook:
         logger.debug("Loaded %s notes.", len(notes))
         return notes
 
-    def make_note(self, date=datetime.datetime.today(), force=False):
+    def make_note(
+        self, date: datetime.datetime = datetime.datetime.today(), force: bool = False
+    ) -> None:
         """Generates and writes a note for the specified date."""
         logger = self._make_logger("Generation")
         logger.debug("Generating a note for %s.", date)
 
+        date_format = str(self.config["note_file_format"])
         dst_path = os.path.join(
-            self.root_dir, self.note_dir, date.strftime(self.config["note_file_format"])
+            self.root_dir, self.note_dir, date.strftime(date_format)
         )
         os.makedirs(os.path.split(dst_path)[0], exist_ok=True)
         if force or not os.path.exists(dst_path):
@@ -115,22 +134,25 @@ class Notebook:
         logger.debug("Finished writing note.")
 
     def make_series(
-        self, days=7, starting=datetime.datetime.today(), force=False
+        self,
+        days: int = 7,
+        starting: datetime.datetime = datetime.datetime.today(),
+        force: bool = False,
     ) -> None:
         """Generate a series of notes for `days` number of days."""
         for _ in range(days):
             self.make_note(starting, force=force)
             starting += datetime.timedelta(days=1)
 
-    def _make_logger(self, sub_log=None) -> logging.Logger:
-        "Get the logger for the notebook, with an optional sub-log name."
+    def _make_logger(self, sub_log: Optional[str] = None) -> logging.Logger:
+        """Get the logger for the notebook, with an optional sub-log name."""
         if isinstance(sub_log, str):
             log_name = f"{LOG_NAME}.{sub_log}"
         else:
             log_name = LOG_NAME
         return logging.getLogger(log_name)
 
-    def _read_config(self) -> None:
+    def _read_config(self) -> Dict[str, Union[str, int]]:
         logger = self._make_logger()
         config_path = os.path.join(self.root_dir, self.config_name)
         logger.debug("Reading config from %s.", config_path)
@@ -159,7 +181,6 @@ class Notebook:
         self.update_projects_and_tasks()
         self.text_corrections()
         for this_note in self.notes:
-            temp_level = this_note.level
             this_note.to_file(this_note.meta[".file"]["path"])
         logger.info("Finished cleaning notes.")
 
@@ -175,7 +196,7 @@ class Notebook:
                 output.append(part)
         return output
 
-    def update_projects_and_tasks(self):
+    def update_projects_and_tasks(self) -> None:
         """
         Build a list of projects/tasks and replace existing ones based on a mapping.
 
@@ -199,7 +220,7 @@ class Notebook:
         write_json(projects, self._working_path("projects.json"))
         write_json(tasks, self._working_path("tasks.json"))
 
-    def text_corrections(self):
+    def text_corrections(self) -> None:
         """Apply each regex replacement pattern in corrections.json to all notes."""
         corrections = read_json(self._working_path("corrections.json"))
         for pattern, replacement in corrections.items():
@@ -217,22 +238,30 @@ class Notebook:
 
         return (sorted(list(projects)), sorted(list(tasks)))
 
-    def _working_path(self, file_name) -> str:
+    def _working_path(self, file_name: str) -> str:
         return os.path.join(self.root_dir, self.working_dir, file_name)
 
-    def render_full(self, dst_path: str) -> None:
+    def render_full(self, dst_path: Optional[str] = None) -> None:
         """Render all notes into a single HTML file."""
         logger = self._make_logger("Rendering")
         logger.info('Rendering full notes to HTML at "%s".', dst_path)
+        if dst_path is None:
+            dst_path = os.path.join(
+                self.root_dir, self.output_dir, f"{self.config['notebook_name']}.html"
+            )
         self._render(
-            notes=self.notes, title=self.config["notebook_name"], dst_path=dst_path
+            notes=self.notes, title=str(self.config["notebook_name"]), dst_path=dst_path
         )
         logger.info("Finished redering full notes.")
 
-    def render_project(self, project_name: str, dst_path: str) -> None:
+    def render_project(self, project_name: str, dst_path: Optional[str] = None) -> None:
         """Render a single project to a HTML file."""
         logger = self._make_logger("Rendering")
         logger.info('Rendering project "%s" to HTML at "%s".', project_name, dst_path)
+        if dst_path is None:
+            dst_path = os.path.join(
+                self.root_dir, self.output_dir, f"{project_name}.html"
+            )
         self._render(
             notes=self.extract_project(project_name),
             title=project_name,
@@ -240,10 +269,14 @@ class Notebook:
         )
         logger.info("Finished redering project.")
 
-    def render_all_projects(self, dst_dir: str) -> None:
+    def render_all_projects(self, dst_dir: Optional[str] = None) -> None:
         """Render all projects to their own HTML file."""
         logger = self._make_logger("Rendering")
         logger.info("Rendering all projects to their own output.")
+
+        if dst_dir is None:
+            dst_dir = os.path.join(self.root_dir, self.output_dir)
+
         projects, _ = self._make_part_list()
         for this_project in projects:
             dst_path = os.path.join(dst_dir, f"{this_project}.html")
@@ -274,11 +307,17 @@ class Notebook:
 
 
 def write_json(data: Dict[str, Any], path: str) -> None:
+    """
+    Write a dictionary to a JSON file.
+    """
     with open(path, "w", encoding="utf-8") as file:
         json.dump(data, file, indent=4)
 
 
 def read_json(path: str) -> Dict[str, Any]:
+    """
+    Read a JSON file (assumed to be a dictionary).
+    """
     if os.path.exists(path):
         with open(path, "r", encoding="utf-8") as file:
             return json.load(file)

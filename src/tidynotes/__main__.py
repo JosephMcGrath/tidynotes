@@ -9,7 +9,7 @@ from .logs import setup_logging
 from .notebook import Notebook
 
 
-def main():
+def main() -> None:
     """
     Run the tool via command-line tools.
     """
@@ -60,6 +60,9 @@ def main():
         ]
     )
 
+    if not active:
+        return
+
     setup_logging(os.path.join(args.notedir, "TidyNotes.log"))
     if args.initialise_notebook:
         book = Notebook.initialise(args.notedir)
@@ -70,19 +73,19 @@ def main():
             print("Directory is not a notebook, use the -i flag to initialise.")
             return
 
-    book = Tidybook(config_path=args.notedir, initialise=args.initialise_notebook)
     if args.clean_headings:
         book.clean()
     if args.render_all:
-        book.render_notebook()
-    if args.generate_note:
-        book.make_note()
+        book.render_full()
     if args.make_series is not None:
-        book.make_note_series(args.make_series)
+        book.make_series(args.make_series)
     if args.extract_project is not None:
-        book.render_project(args.extract_project)
+        book.render_project(project_name=args.extract_project)
+
     if args.extract_all:
         book.render_all_projects()
+    if args.generate_note:
+        book.make_note()
 
 
 if __name__ == "__main__":

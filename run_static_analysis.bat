@@ -1,5 +1,6 @@
 @ECHO OFF
-call %conda_activate%
-black src
-pylint src
+call activate
+python -m black src
+python -m mypy src
+python -m pylint src
 PAUSE
