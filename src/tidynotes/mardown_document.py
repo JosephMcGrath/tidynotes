@@ -129,7 +129,7 @@ class MarkdownPart:
         output = []
         for part in self.parts:
             if re.match(pattern, part.title):
-                output.append(part)
+                output.append(copy.deepcopy(part))
             output.extend(part.extract_parts(pattern))
         return output
 

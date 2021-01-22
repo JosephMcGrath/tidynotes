@@ -4,7 +4,7 @@ import json
 import logging
 import os
 import re
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import jinja2
 import pkg_resources
@@ -13,6 +13,9 @@ from .mardown_document import MarkdownPart
 
 # TODO : Logging
 # TODO : Regex note search
+# TODO : Config management
+# TODO : Dates in header as dates - YAML handles that
+
 
 class Notebook:
     log_name = "Tidynotes"
@@ -63,11 +66,12 @@ class Notebook:
     def read_notes(self) -> List[MarkdownPart]:
         """Read all notes from files."""
         note_pattern = os.path.join(self.root_dir, self.note_dir, "**", "*.md")
+        notes = []
         for path in glob.glob(note_pattern, recursive=True):
-            MarkdownPart.from_file(path)
-        return [
-            MarkdownPart.from_file(x) for x in glob.glob(note_pattern, recursive=True)
-        ]
+            temp = MarkdownPart.from_file(path)
+            temp.set_level(2)
+            notes.append(temp)
+        return notes
 
     def make_note(self, date=datetime.datetime.today(), force=False):
         """Generates and writes a note for the specified date."""
@@ -119,16 +123,19 @@ class Notebook:
         self.update_projects_and_tasks()
         self.text_corrections()
         for this_note in self.notes:
+            temp_level = this_note.level
+            this_note.set_level(1)
             this_note.to_file(this_note.meta[".file"]["path"])
+            this_note.set_level(temp_level)
 
-    def extract_project(self, pattern: str) -> MarkdownPart:
+    def extract_project(self, pattern: str) -> List[MarkdownPart]:
         """Extract all entries for a project."""
-        output = MarkdownPart(f"# {pattern}")
-        self.notes = self.read_notes()
+        output = []
         for this_note in self.notes:
             for part in this_note.extract_parts(pattern):
-                output.add_part(part)
-                output.parts[-1].title = this_note.title
+                part.title = this_note.title
+                part.set_level(2)
+                output.append(part)
         return output
 
     def update_projects_and_tasks(self):
@@ -175,6 +182,26 @@ class Notebook:
 
     def _working_path(self, file_name) -> str:
         return os.path.join(self.root_dir, self.working_dir, file_name)
+
+    def render_full(self, dst_path: str) -> None:
+        self._render(
+            notes=self.notes, title=self.config["notebook_name"], dst_path=dst_path
+        )
+
+    def render_project(self, project_name: str, dst_path: str) -> None:
+        self._render(
+            notes=self.extract_project(project_name),
+            title=project_name,
+            dst_path=dst_path,
+        )
+
+    def _render(self, notes: List[MarkdownPart], title: str, dst_path: str) -> None:
+        output = self.env.get_template("page.html").render(
+            **self.config, notes=notes, title=title
+        )
+
+        with open(dst_path, "w", encoding="utf-8") as file:
+            file.write(output)
 
 
 def write_json(data: Dict[str, Any], path: str) -> None:

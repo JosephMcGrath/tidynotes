@@ -1,15 +1,17 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>{{notebook_name}}</title>
+  <title>{{title}}</title>
   <style type="text/css">
 {% include "note.css" %}
   </style>
 </head>
 <body>
 <div class = "main">
-<h1>{{notebook_name}}</h1>
-{{body}}
+<h1>{{title}}</h1>
+{% for note in notes %}
+{{note.html()}}
+{% endfor %}
 </div>
 </body>
 </html>
