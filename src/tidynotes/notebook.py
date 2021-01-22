@@ -18,6 +18,8 @@ from .mardown_document import MarkdownPart
 # TODO : Fix __main__.py
 # TODO : Delete old code
 # TODO : Linting etc
+# TODO : Documentation template.
+
 
 class Notebook:
     template_dir = "templates"
@@ -68,12 +70,18 @@ class Notebook:
 
     def read_notes(self) -> List[MarkdownPart]:
         """Read all notes from files."""
+        logger = self._make_logger()
+        logger.debug("Reading notes.")
         note_pattern = os.path.join(self.root_dir, self.note_dir, "**", "*.md")
         notes = []
         for path in glob.glob(note_pattern, recursive=True):
             temp = MarkdownPart.from_file(path)
+            if temp.is_stub():
+                logger.debug('"%s" is a stub.', path)
+                continue
             temp.set_level(2)
             notes.append(temp)
+        logger.debug("Loaded %s notes.", len(notes))
         return notes
 
     def make_note(self, date=datetime.datetime.today(), force=False):
@@ -136,6 +144,8 @@ class Notebook:
 
     def extract_project(self, pattern: str) -> List[MarkdownPart]:
         """Extract all entries for a project."""
+        logger = self._make_logger()
+        logger.debug('Extracting notes for "%s".', pattern)
         output = []
         for this_note in self.notes:
             for part in this_note.extract_parts(pattern):
@@ -190,16 +200,18 @@ class Notebook:
         return os.path.join(self.root_dir, self.working_dir, file_name)
 
     def render_full(self, dst_path: str) -> None:
+        """Render all notes into a single HTML file."""
         logger = self._make_logger("Rendering")
-        logger.info("Rendering full notes to HTML at [%s].", dst_path)
+        logger.info('Rendering full notes to HTML at "%s".', dst_path)
         self._render(
             notes=self.notes, title=self.config["notebook_name"], dst_path=dst_path
         )
         logger.info("Finished redering full notes.")
 
     def render_project(self, project_name: str, dst_path: str) -> None:
+        """Render a single project to a HTML file."""
         logger = self._make_logger("Rendering")
-        logger.info("Rendering project [%s] to HTML at [%s].", project_name, dst_path)
+        logger.info('Rendering project "%s" to HTML at "%s".', project_name, dst_path)
         self._render(
             notes=self.extract_project(project_name),
             title=project_name,
@@ -207,13 +219,38 @@ class Notebook:
         )
         logger.info("Finished redering project.")
 
+    def render_all_projects(self, dst_dir: str) -> None:
+        """Render all projects to their own HTML file."""
+        logger = self._make_logger("Rendering")
+        logger.info("Rendering all projects to their own output.")
+        projects, _ = self._make_part_list()
+        for this_project in projects:
+            dst_path = os.path.join(dst_dir, f"{this_project}.html")
+            self.render_project(this_project, dst_path)
+        logger.info("Finished all rendering projects.")
+
     def _render(self, notes: List[MarkdownPart], title: str, dst_path: str) -> None:
+        logger = self._make_logger("Rendering")
+        logger.debug("Combining %s parts for rendering.", len(notes))
+        document = MarkdownPart(f"# {title}")
+        for part in notes:
+            document.add_part(part)
+        
+        logger.debug("Making render-time corrections.")
+        corrections = read_json(self._working_path("render_changes.json"))
+        for pattern, replacement in corrections.items():
+            document.make_replacement(pattern, replacement)
+                
+
+        logger.debug("Rendering template")
         output = self.env.get_template("page.html").render(
-            **self.config, notes=notes, title=title
+            **self.config, document=document, title=title
         )
 
+        logger.debug("Writing to disk.")
         with open(dst_path, "w", encoding="utf-8") as file:
             file.write(output)
+        logger.debug("Finished rendering.")
 
 
 def write_json(data: Dict[str, Any], path: str) -> None:

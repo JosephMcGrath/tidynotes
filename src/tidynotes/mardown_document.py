@@ -121,6 +121,9 @@ class MarkdownPart:
         """
         self.parts = [x for x in self.parts if not re.match(pattern, x.title)]
 
+    def copy(self) -> "MarkdownPart":
+        return copy.deepcopy(self)
+
     def extract_parts(self, pattern: str) -> List["MarkdownPart"]:
         """
         Extract any parts of the document that have a title matching the provided regex.
@@ -129,7 +132,7 @@ class MarkdownPart:
         output = []
         for part in self.parts:
             if re.match(pattern, part.title):
-                output.append(copy.deepcopy(part))
+                output.append(part.copy())
             output.extend(part.extract_parts(pattern))
         return output
 
@@ -181,7 +184,7 @@ class MarkdownPart:
         """
         Add a copy of the provided part as a sub-heading.
         """
-        new_part = copy.deepcopy(new_part)
+        new_part = new_part.copy()
         new_part.set_level(self.level + 1)
         self.parts.append(new_part)
 
