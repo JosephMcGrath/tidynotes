@@ -6,6 +6,7 @@ There should be no direct modification of markdown here, that's in MarkdownPart.
 
 import datetime
 import glob
+import hashlib
 import json
 import logging
 import os
@@ -303,7 +304,25 @@ class Notebook:
         logger.debug("Writing to disk.")
         with open(dst_path, "w", encoding="utf-8") as file:
             file.write(output)
+        self._log_file_info(dst_path)
         logger.debug("Finished rendering.")
+
+    def _log_file_info(self, file_path: str) -> None:
+        """Logs information about a file (called after rendering an output)."""
+        logger = self._make_logger()
+        logger.debug("Collating information on %s.", file_path)
+        dst_path = self._working_path("hash_log.csv")
+        file_info = os.stat(file_path)
+        output = [
+            '"' + os.path.relpath(file_path, self.root_dir) + '"',
+            datetime.datetime.fromtimestamp(file_info.st_mtime).isoformat(),
+            calc_sha256(file_path),
+            calc_md5(file_path),
+            str(file_info.st_size),
+        ]
+        with open(dst_path, mode="a", encoding="utf-8") as file:
+            file.write(",".join(output) + "\n")
+        logger.debug("SHA256 was %s.", output[2])
 
 
 def write_json(data: Dict[str, Any], path: str) -> None:
@@ -323,3 +342,27 @@ def read_json(path: str) -> Dict[str, Any]:
             return json.load(file)
     else:
         return {}
+
+
+def calc_sha256(path: str, buffer_size: int = 65536) -> str:
+    "Calculates the SHA256 of a file."
+    algorithm = hashlib.sha256()
+    with open(path, "rb") as file_in:
+        while True:
+            data = file_in.read(buffer_size)
+            if not data:
+                break
+            algorithm.update(data)
+    return algorithm.hexdigest()
+
+
+def calc_md5(path: str, buffer_size: int = 65536) -> str:
+    "Calculates the MD5 of a file."
+    algorithm = hashlib.md5()
+    with open(path, "rb") as file_in:
+        while True:
+            data = file_in.read(buffer_size)
+            if not data:
+                break
+            algorithm.update(data)
+    return algorithm.hexdigest()
