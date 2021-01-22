@@ -17,6 +17,7 @@ import yaml
 
 class MarkdownPart:
     # TODO : Define levels
+    # TODO : Support title-less documents (limited support)
     """
     A part of a markdown document.
 

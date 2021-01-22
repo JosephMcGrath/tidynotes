@@ -33,6 +33,6 @@ setup(
     packages=find_packages(where="src"),
     package_dir={"": "src"},
     include_package_data=True,
-    install_requires=["jinja2", "markdown"],
+    install_requires=["jinja2", "markdown", "pyyaml"],
     entry_points={"console_scripts": ["tidynotes=tidynotes.__main__:main"]},
 )

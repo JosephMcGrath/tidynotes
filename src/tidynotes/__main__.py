@@ -6,9 +6,7 @@ import argparse
 import os
 
 from .logs import setup_logging
-from .notebook import Tidybook
-
-# TODO: These could probably be entry points too?
+from .notebook import Notebook
 
 
 def main():
@@ -23,7 +21,6 @@ def main():
     parser.add_argument(
         "-g", "--generate_note", help="Make a note for today.", action="store_true"
     )
-    parser.add_argument("-d", "--make_day", help="Make notes for a specific day.")
     parser.add_argument(
         "-s", "--make_series", help="Make notes for n days in the future.", type=int
     )
@@ -31,10 +28,7 @@ def main():
         "-r", "--render_all", help="Render all notes.", action="store_true"
     )
     parser.add_argument(
-        "-c",
-        "--clean_headings",
-        help="Clean headings in the notes.",
-        action="store_true",
+        "-c", "--clean", help="Clean up notes in the notebook.", action="store_true"
     )
     parser.add_argument(
         "-i",
@@ -58,19 +52,23 @@ def main():
     active = any(
         [
             args.initialise_notebook,
-            args.clean_headings,
+            args.clean,
             args.render_all,
             args.generate_note,
-            args.make_day is not None,
             args.make_series is not None,
             args.extract_project is not None,
         ]
     )
-    if len(os.listdir(args.notedir)) > 0 and not active:
-        print("Use the '-i' argument to force initialisation in a non-empty folder.")
-        return
-    
+
     setup_logging(os.path.join(args.notedir, "TidyNotes.log"))
+    if args.initialise_notebook:
+        book = Notebook.initialise(args.notedir)
+    else:
+        if Notebook.is_notebook(args.notedir):
+            book = Notebook(args.notedir)
+        else:
+            print("Directory is not a notebook, use the -i flag to initialise.")
+            return
 
     book = Tidybook(config_path=args.notedir, initialise=args.initialise_notebook)
     if args.clean_headings:
@@ -79,8 +77,6 @@ def main():
         book.render_notebook()
     if args.generate_note:
         book.make_note()
-    if args.make_day is not None:
-        book.make_note_str(args.make_day)
     if args.make_series is not None:
         book.make_note_series(args.make_series)
     if args.extract_project is not None:

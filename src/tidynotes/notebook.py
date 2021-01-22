@@ -12,24 +12,23 @@ import pkg_resources
 from .logs import LOG_NAME, setup_logging
 from .mardown_document import MarkdownPart
 
-# TODO : Regex note search
-# TODO : Config management
-# TODO : Dates in header as dates - YAML handles that
-# TODO : Fix __main__.py
-# TODO : Delete old code
 # TODO : Linting etc
 # TODO : Documentation template.
+# TODO : Update tests (test the CLI!)
 
 
 class Notebook:
     template_dir = "templates"
     note_dir = "notes"
     working_dir = "working"
+    config_name = "config.json"
 
     def __init__(self, notebook_dir: str) -> None:
         logger = self._make_logger()
         self.root_dir = os.path.abspath(notebook_dir)
         self.config: Dict[str, Union[str, int]] = self._read_config()
+        if "notebook_name" not in self.config:
+            self.set_config("notebook_name", "TidyNotes notebook.")
 
         _ = jinja2.FileSystemLoader(os.path.join(self.root_dir, self.template_dir))
         self.env = jinja2.Environment(loader=_)
@@ -43,7 +42,7 @@ class Notebook:
         logger = logging.getLogger(LOG_NAME)
         logging.info("Creating notebook in [%s].", notebook_dir)
         template_list = {
-            "config.json": "",
+            cls.config_name: "",
             "corrections.json": cls.working_dir,
             "note.css": cls.template_dir,
             "note.md": cls.template_dir,
@@ -68,6 +67,17 @@ class Notebook:
 
         return cls(notebook_dir)
 
+    @classmethod
+    def is_notebook(cls, notebook_dir: str) -> bool:
+        """Checks if the directory is a valid notebook."""
+        config_path = os.path.join(notebook_dir, cls.config_name)
+        if not os.path.exists(config_path):
+            return False
+        config = read_json(config_path)
+        if not isinstance(config, dict):
+            return False
+        return "notebook_name" in read_json(config_path)
+
     def read_notes(self) -> List[MarkdownPart]:
         """Read all notes from files."""
         logger = self._make_logger()
@@ -79,14 +89,12 @@ class Notebook:
             if temp.is_stub():
                 logger.debug('"%s" is a stub.', path)
                 continue
-            temp.set_level(2)
             notes.append(temp)
         logger.debug("Loaded %s notes.", len(notes))
         return notes
 
     def make_note(self, date=datetime.datetime.today(), force=False):
         """Generates and writes a note for the specified date."""
-        # TODO : Notebook name in headers.
         logger = self._make_logger("Generation")
         logger.debug("Generating a note for %s.", date)
 
@@ -97,11 +105,22 @@ class Notebook:
         if force or not os.path.exists(dst_path):
             template = self.env.get_template("note.md")
             output = MarkdownPart(template.render(date=date))
-            output.meta["created"] = date.isoformat()
+            output.meta["note_for"] = date
+            output.meta["notebook"] = self.config["notebook_name"]
             output.to_file(dst_path)
+            logger.debug("Generated note")
+            self.notes.append(MarkdownPart.from_file(dst_path))
         else:
             logger.debug("Note already exists - skipping.")
         logger.debug("Finished writing note.")
+
+    def make_series(
+        self, days=7, starting=datetime.datetime.today(), force=False
+    ) -> None:
+        """Generate a series of notes for `days` number of days."""
+        for _ in range(days):
+            self.make_note(starting, force=force)
+            starting += datetime.timedelta(days=1)
 
     def _make_logger(self, sub_log=None) -> logging.Logger:
         "Get the logger for the notebook, with an optional sub-log name."
@@ -113,7 +132,7 @@ class Notebook:
 
     def _read_config(self) -> None:
         logger = self._make_logger()
-        config_path = os.path.join(self.root_dir, "config.json")
+        config_path = os.path.join(self.root_dir, self.config_name)
         logger.debug("Reading config from %s.", config_path)
 
         if not os.path.exists(config_path):
@@ -124,10 +143,14 @@ class Notebook:
             logger.error(message)
             raise RuntimeError(message)
 
-        with open(config_path, encoding="utf-8") as file_in:
-            config = json.load(file_in)
+        config = read_json(config_path)
         logger.debug("Finished reading config.")
         return config
+
+    def set_config(self, item_name: str, item_value: Any) -> None:
+        """Set an item in the notebook config (including config file)."""
+        self.config[item_name] = item_value
+        write_json(self.config, os.path.join(self.root_dir, self.config_name))
 
     def clean(self) -> None:
         """General cleanup operations on the notebook."""
@@ -137,9 +160,7 @@ class Notebook:
         self.text_corrections()
         for this_note in self.notes:
             temp_level = this_note.level
-            this_note.set_level(1)
             this_note.to_file(this_note.meta[".file"]["path"])
-            this_note.set_level(temp_level)
         logger.info("Finished cleaning notes.")
 
     def extract_project(self, pattern: str) -> List[MarkdownPart]:
@@ -235,12 +256,11 @@ class Notebook:
         document = MarkdownPart(f"# {title}")
         for part in notes:
             document.add_part(part)
-        
+
         logger.debug("Making render-time corrections.")
         corrections = read_json(self._working_path("render_changes.json"))
         for pattern, replacement in corrections.items():
             document.make_replacement(pattern, replacement)
-                
 
         logger.debug("Rendering template")
         output = self.env.get_template("page.html").render(

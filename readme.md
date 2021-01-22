@@ -13,10 +13,9 @@ The script is designed to be called from the command-line. It takes a directory 
 
 * ```-g```/```--generate_note``` generates a note for the current day,
 * ```-s```/```--make_series``` generates notes for n days in the future,
-* ```-d```/```--make_day``` generates notes a day specified as a text value,
 * ```-i```/```--initialise_notebook``` generates a blank notebook in the directory,
 * ```-r```/```--render_all``` merges all markdown files and renders them into a single html output,
-* ```-c```/```--clean_headings``` runs a simple heading cleanup routine and runs user-set regex over all notes,
+* ```-c```/```--clean``` runs a simple heading cleanup routine and runs user-set regex over all notes,
 * ```-e```/```--extract_project``` extracts and renders the notes for a specific project,
 * ```-a```/```--extract_all``` extracts and renders the notes for all projects,
 
