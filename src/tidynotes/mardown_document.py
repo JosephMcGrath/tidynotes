@@ -124,6 +124,7 @@ class MarkdownPart:
         """
         Extract any parts of the document that have a title matching the provided regex.
         """
+        # TODO : Non-regex version & depth limit.
         output = []
         for part in self.parts:
             if re.match(pattern, part.title):
