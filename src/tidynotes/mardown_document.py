@@ -13,7 +13,6 @@ import yaml
 
 
 class MarkdownPart:
-    # TODO : Support title-less documents (limited support)
     """
     A part of a markdown document.
 
@@ -29,6 +28,7 @@ class MarkdownPart:
 
     * file - The path that the document came from (if applicable).
     """
+
     renderer = markdown.Markdown(
         extensions=["fenced_code", "tables", "sane_lists", "admonition"]
     )
@@ -124,11 +124,10 @@ class MarkdownPart:
         """
         return copy.deepcopy(self)
 
-    def extract_parts(self, pattern: str) -> List["MarkdownPart"]:
+    def extract_parts(self, pattern: str, regex: bool = True) -> List["MarkdownPart"]:
         """
         Extract any parts of the document that have a title matching the provided regex.
         """
-        # TODO : Non-regex version & depth limit.
         output = []
         for part in self.parts:
             if re.match(pattern, part.title):

@@ -18,11 +18,6 @@ import pkg_resources
 from .logs import LOG_NAME
 from .mardown_document import MarkdownPart
 
-# TODO : Linting etc
-# TODO : Documentation template.
-# TODO : Update tests (test the CLI!)
-# TODO : Hash logs
-
 
 class Notebook:
     """
@@ -104,11 +99,14 @@ class Notebook:
         for path in glob.glob(note_pattern, recursive=True):
             temp = MarkdownPart.from_file(path)
             if temp.is_stub():
-                logger.debug('"%s" is a stub.', path)
-                continue
+                logger.info('"%s" is a stub.', path)
             notes.append(temp)
         logger.debug("Loaded %s notes.", len(notes))
         return notes
+
+    def refresh(self) -> None:
+        """Reload all of the notes for the notebook."""
+        self.notes = self.read_notes()
 
     def make_note(
         self, date: datetime.datetime = datetime.datetime.today(), force: bool = False

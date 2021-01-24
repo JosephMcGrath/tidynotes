@@ -12,7 +12,7 @@ with open(HERE / "readme.md", encoding="utf-8") as f:
 # This call to setup() does all the work
 setup(
     name="tidynotes",
-    version="20.05.01",
+    version="21.01.01",
     description="A simple digital notebook using Markdown.",
     long_description=README,
     long_description_content_type="text/markdown",

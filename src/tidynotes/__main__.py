@@ -73,7 +73,9 @@ def main() -> None:
             print("Directory is not a notebook, use the -i flag to initialise.")
             return
 
-    if args.clean_headings:
+    if args.generate_note:
+        book.make_note()
+    if args.clean:
         book.clean()
     if args.render_all:
         book.render_full()
@@ -81,11 +83,8 @@ def main() -> None:
         book.make_series(args.make_series)
     if args.extract_project is not None:
         book.render_project(project_name=args.extract_project)
-
     if args.extract_all:
         book.render_all_projects()
-    if args.generate_note:
-        book.make_note()
 
 
 if __name__ == "__main__":
