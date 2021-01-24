@@ -1,16 +1,12 @@
+# pylint: disable=unused-import, redefined-outer-name
+"""
+Tests for the CLI architecture.
+"""
 import os
-import tempfile
-from typing import Generator
 
-import pytest
 import tidynotes
 
-
-@pytest.fixture
-def test_notebook_dir() -> Generator[str, None, None]:
-    """Make a notebook directory."""
-    with tempfile.TemporaryDirectory("tidynotes") as working_dir:
-        yield working_dir
+from .fixtures import test_notebook_dir
 
 
 def test_create_cli(test_notebook_dir: str) -> None:

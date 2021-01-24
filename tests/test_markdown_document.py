@@ -1,4 +1,7 @@
-import pytest
+# pylint: disable=redefined-outer-name
+"""
+Tests for the code managing individual notes.
+"""
 from tidynotes.mardown_document import MarkdownPart
 
 

@@ -124,7 +124,7 @@ class MarkdownPart:
         """
         return copy.deepcopy(self)
 
-    def extract_parts(self, pattern: str, regex: bool = True) -> List["MarkdownPart"]:
+    def extract_parts(self, pattern: str) -> List["MarkdownPart"]:
         """
         Extract any parts of the document that have a title matching the provided regex.
         """
@@ -209,45 +209,13 @@ class MarkdownPart:
         """
         Parse raw markdown into its component parts.
         """
-        # TODO : Split this function up.
-        heading_pattern = re.compile(r"^(#+) (.*)$")
         lines = text.split("\n")
-        level = -1
-        title = ""
         line_no = -1
 
-        # Parse metadata
-        if lines[0].startswith("---"):
-            meta_block = []
-            for line_no, line in enumerate(lines):
-                if line.startswith("---"):
-                    if line_no > 0:
-                        break
-                else:
-                    meta_block.append(line)
-            self.meta = {**self.meta, **yaml.safe_load("\n".join(meta_block))}
-            if "title" in self.meta:
-                title = self.meta["title"]
-                level = 0
-                lines = lines[line_no + 1 :]
+        lines = self._parse_metadata(lines)
+        lines = self._parse_title(lines)
 
-        # Get header
-        for line_no, line in enumerate(lines):
-            if not re.match(heading_pattern, line):
-                continue
-
-            temp, first_heading = re.findall(heading_pattern, line)[0]
-
-            if not title or first_heading == title:
-                title = first_heading
-                level = len(temp)
-            lines = lines[line_no + 1 :]
-            break
-        if not title:
-            raise ValueError("Couldn't find a title in the document.")
-
-        child_pattern = re.compile(f"^({'#' * (level + 1)}) (.*)$")
-
+        child_pattern = re.compile(f"^({'#' * (self.level + 1)}) (.*)$")
         # Parse main text
         body: List[str] = []
         for line_no, line in enumerate(lines):
@@ -272,10 +240,47 @@ class MarkdownPart:
             if temp.strip():
                 children.append(MarkdownPart(temp))
 
-        self.title = title
         self.body = "\n".join(body).strip("\n") + "\n"
         self.parts = children
-        self.set_level(level)
+        self.set_level(self.level)
+
+    def _parse_metadata(self, lines: List[str]) -> List[str]:
+        """Parse any metadata from the file."""
+        line_no = -1
+        if lines[0].startswith("---"):
+            meta_block = []
+            for line_no, line in enumerate(lines):
+                if line.startswith("---"):
+                    if line_no > 0:
+                        break
+                else:
+                    meta_block.append(line)
+            self.meta = {**self.meta, **yaml.safe_load("\n".join(meta_block))}
+            if "title" in self.meta:
+                self.title = self.meta["title"]
+                self.level = 0
+                lines = lines[line_no + 1 :]
+        return lines
+
+    def _parse_title(self, lines: List[str]) -> List[str]:
+        """Parse the document to get the title of the document."""
+        heading_pattern = re.compile(r"^(#+) (.*)$")
+
+        for line_no, line in enumerate(lines):
+            if not re.match(heading_pattern, line):
+                continue
+
+            temp, first_heading = re.findall(heading_pattern, line)[0]
+
+            if not self.title or first_heading == self.title:
+                self.title = first_heading
+                self.level = len(temp)
+            lines = lines[line_no + 1 :]
+            break
+        if not self.title:
+            raise ValueError("Couldn't find a title in the document.")
+
+        return lines
 
     def set_level(self, level: int) -> None:
         """
