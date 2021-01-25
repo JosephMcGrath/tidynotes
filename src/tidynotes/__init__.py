@@ -2,7 +2,10 @@
 Tools to generate and manage Markdown notebooks.
 """
 
-from .notebook import Tidybook
+from .logs import LOG_NAME, setup_logging
+from .notebook import Notebook
 
 # Version of the tidynotes package
-__version__ = "20.05.01"
+__version__ = "21.01.01"
+
+setup_logging()

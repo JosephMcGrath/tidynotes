@@ -5,12 +5,11 @@ Command-line arguments to drive the notebook management tools.
 import argparse
 import os
 
-from .notebook import Tidybook
+from .logs import setup_logging
+from .notebook import Notebook
 
-# TODO: These could probably be entry points too?
 
-
-def main():
+def main() -> None:
     """
     Run the tool via command-line tools.
     """
@@ -22,7 +21,6 @@ def main():
     parser.add_argument(
         "-g", "--generate_note", help="Make a note for today.", action="store_true"
     )
-    parser.add_argument("-d", "--make_day", help="Make notes for a specific day.")
     parser.add_argument(
         "-s", "--make_series", help="Make notes for n days in the future.", type=int
     )
@@ -30,10 +28,7 @@ def main():
         "-r", "--render_all", help="Render all notes.", action="store_true"
     )
     parser.add_argument(
-        "-c",
-        "--clean_headings",
-        help="Clean headings in the notes.",
-        action="store_true",
+        "-c", "--clean", help="Clean up notes in the notebook.", action="store_true"
     )
     parser.add_argument(
         "-i",
@@ -57,31 +52,37 @@ def main():
     active = any(
         [
             args.initialise_notebook,
-            args.clean_headings,
+            args.clean,
             args.render_all,
             args.generate_note,
-            args.make_day is not None,
             args.make_series is not None,
             args.extract_project is not None,
         ]
     )
-    if len(os.listdir(args.notedir)) > 0 and not active:
-        print("Use the '-i' argument to force initialisation in a non-empty folder.")
+
+    if not active:
         return
 
-    book = Tidybook(config_path=args.notedir, initialise=args.initialise_notebook)
-    if args.clean_headings:
-        book.clean()
-    if args.render_all:
-        book.render_notebook()
+    setup_logging(os.path.join(args.notedir, "TidyNotes.log"))
+    if args.initialise_notebook:
+        book = Notebook.initialise(args.notedir)
+    else:
+        if Notebook.is_notebook(args.notedir):
+            book = Notebook(args.notedir)
+        else:
+            print("Directory is not a notebook, use the -i flag to initialise.")
+            return
+
     if args.generate_note:
         book.make_note()
-    if args.make_day is not None:
-        book.make_note_str(args.make_day)
+    if args.clean:
+        book.clean()
+    if args.render_all:
+        book.render_full()
     if args.make_series is not None:
-        book.make_note_series(args.make_series)
+        book.make_series(args.make_series)
     if args.extract_project is not None:
-        book.render_project(args.extract_project)
+        book.render_project(project_name=args.extract_project)
     if args.extract_all:
         book.render_all_projects()
 

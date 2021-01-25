@@ -1,5 +1,6 @@
 @ECHO OFF
-call %conda_activate%
-black src
-pylint src
+call activate
+python -m black .
+python -m mypy src/tidynotes
+python -m pylint src/tidynotes
 PAUSE

@@ -1,14 +1,6 @@
 {
-  "note_path":"notes",
-  "template_path":"templates",
-  "working_path":"working",
   "notebook_name":"Test",
-  "date_formats" : {
-    "iso": "%Y-%m-%d",
-    "title": "%Y-%m-%d (%A)",
-    "file": "notes_%Y-%m-%d_%a.md",
-    "path": "%Y/%m"
-  },
+  "note_file_format" : "%Y/%m/notes_%Y-%m-%d_%a.md",
   "bg_hue": 35,
   "text_col" : "rgb(20, 26, 21)"
 }
