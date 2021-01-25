@@ -235,7 +235,9 @@ class Notebook:
             for this_project in this_note.parts:
                 tasks.update([x.title for x in this_project.parts])
 
-        return (sorted(list(projects)), sorted(list(tasks)))
+        return sorted(list({x for x in projects if x is not None})), sorted(
+            list({x for x in tasks if x is not None})
+        )
 
     def _working_path(self, file_name: str) -> str:
         return os.path.join(self.root_dir, self.working_dir, file_name)

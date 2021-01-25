@@ -39,7 +39,7 @@ class MarkdownPart:
         self.level = 0
         self.file: Optional[str] = None
 
-        self.title: str = ""
+        self.title: Optional[str] = None
         self.body: str = ""
         self.parts: List[MarkdownPart] = []
         self.meta: Dict[str, Any] = {}
@@ -95,7 +95,7 @@ class MarkdownPart:
             useable_meta["title"] = self.title
             meta_block = "\n".join(["---", yaml.dump(useable_meta).strip(), "---", ""])
             parts.append(meta_block)
-        if self.level > 0:
+        if self.level > 0 and self.title is not None:
             title = "#" * self.level + " " + self.title + "\n"
         else:
             title = ""
@@ -115,8 +115,14 @@ class MarkdownPart:
     def drop_parts(self, pattern: str) -> None:
         """
         Drop any parts that have a title matching the provided regex.
+
+        Parts without a title can't be dropped this way.
         """
-        self.parts = [x for x in self.parts if not re.match(pattern, x.title)]
+        self.parts = [
+            x
+            for x in self.parts
+            if x.title is not None and not re.match(pattern, x.title)
+        ]
 
     def copy(self) -> "MarkdownPart":
         """
@@ -127,10 +133,12 @@ class MarkdownPart:
     def extract_parts(self, pattern: str) -> List["MarkdownPart"]:
         """
         Extract any parts of the document that have a title matching the provided regex.
+
+        Parts without a title can't be extracted this way.
         """
         output = []
         for part in self.parts:
-            if re.match(pattern, part.title):
+            if part.title is not None and re.match(pattern, part.title):
                 output.append(part.copy())
             output.extend(part.extract_parts(pattern))
         return output
@@ -161,6 +169,8 @@ class MarkdownPart:
         """
         Replace the title of the document or its children using a dictionary map.
         """
+        if self.title is None:
+            return
         if level is None or level == self.level:
             self.title = replacements.get(self.title, self.title)
         if level == self.level:
@@ -267,8 +277,10 @@ class MarkdownPart:
         heading_pattern = re.compile(r"^(#+) (.*)$")
 
         for line_no, line in enumerate(lines):
-            if not re.match(heading_pattern, line):
+            if not line.strip():
                 continue
+            if not re.match(heading_pattern, line):
+                break
 
             temp, first_heading = re.findall(heading_pattern, line)[0]
 
@@ -277,8 +289,6 @@ class MarkdownPart:
                 self.level = len(temp)
             lines = lines[line_no + 1 :]
             break
-        if not self.title:
-            raise ValueError("Couldn't find a title in the document.")
 
         return lines
 

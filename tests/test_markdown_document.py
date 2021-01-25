@@ -48,3 +48,14 @@ def test_replacement_regex() -> None:
     test_note.make_replacement("isn't", "is", regex=True)
 
     assert test_note.body == "Hello world, this is a test!\n"
+
+
+def test_no_title_note() -> None:
+    """Test for note creation without a title."""
+    body = "This is the note body"
+
+    test_note = MarkdownPart(f"{body}")
+
+    assert test_note.title is None
+    assert test_note.body.strip() == body
+    assert len(test_note.parts) == 0
